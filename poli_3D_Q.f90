@@ -31,7 +31,7 @@ use hielonn
 
 use cal_radio
 
-use precipitado
+use precipitado1
 
 use radio0
 
@@ -48,7 +48,7 @@ integer, parameter :: N = 50
 
 ! Usar N para definir las dimensiones de las matrices
 integer, parameter :: filas = N, columnas = N, ancho = N, stoptime = 100
-character(len=60), parameter :: radio_fijo = 's'
+character(len=60), parameter :: radio_fijo = 'n'
 
 
 
@@ -67,14 +67,14 @@ real(pr),parameter                      ::   beta=1.0,ang_l=20.0
 !cuanto mas chico es beta menor es la influencia de la temperatura
 integer                                 ::   delta,sip1,sip2,sip3,iii,jjj,kkk,i,j,k,s, BG_part0,BG_part1,BG_part2,BG_part,iter, temp
 integer                                 ::   time,puntero_s,swap,ii,jj,kk,w,num,sitioi,sitiof,time0
-integer                                 ::   jfl,jkl,jcl,jfr,jkr,jcr,volu,pastor,u1, guille
+integer                                 ::   jfl,jkl,jcl,jfr,jkr,jcr,volu,pastor,u1
 !factores relacionados con la funcion de energia superficial y con la posibilidad de rotacion de los granos
 integer                                 ::   energy
 integer                                 ::   Q,numero_g,e,mama,u
 integer                                 ::   mm,nn,ll,ms,veci,bordei,bordef,centro,bordeCT
 integer                                 ::   matrix,tarzan,centro0,centro00,centro1,centro2,radius,mat_total1
-real(pr)                                ::   radio_g,fraccion_v,deltaGG,xx,ww,angulote,mini1,mini2
-real(pr)                                ::   Hi,difa,difa1,ruleta,area_g
+real(pr)                                ::   radio_g,deltaGG,xx,ww,angulote,mini1,mini2, fraccion_v
+real(pr)                                ::   Hi,difa,difa1,ruleta,area_g,fraccion_v0,fraccion_v1,fraccion_v2
 integer,dimension(filas,columnas,ancho) ::   c
 
 integer,dimension(10,10,10)             ::   c1,c2,c3
@@ -119,9 +119,6 @@ volumen = 'output/' // trim(adjustl(volumen1)) // 'x' // &
 !enegy
 !1=logaritmo, 2=senusoidal ice, 3=uniforme, 4=lineal, 5=lineal ice
 
-!guille es una variable para grabar el cristal inicial con un tamaño de grano definido
-
-guille = 0
 
 !precipitados 
 !pi con precipitados
@@ -138,12 +135,12 @@ distri_b = 'uniform'
 
 time0 = 0
 energy = 3
-precip ='puro'
+precip ='pi'
           
-fraccion_v = 3.0_pr                                        !fraccion de materia
-
-
-
+fraccion_v0 = 0.003_pr                                        !fraccion de materia 0
+fraccion_v1 = 0.01_pr                                        !fraccion de materia 1 
+fraccion_v2 = 0.014_pr                                        !fraccion de materia 2
+fraccion_v=fraccion_v1
 
 directorio = 'output/'
 directorio1 = 'inicial/'
@@ -259,9 +256,8 @@ close(45)
 
 
 
-if ((precip=='pi') .and. (radio_fijo=='s'))  call Prep_r(c,filas,columnas,ancho,fraccion_v, distri_b,radius)
-if ((precip=='pi') .and. (radio_fijo=='n'))  call Prep(c,filas,columnas,ancho,fraccion_v)
-
+if ((precip=='pi') .and. (radio_fijo=='s'))  call Prep_r(c,filas,columnas,ancho,fraccion_v1, distri_b,radius)
+if ((precip=='pi') .and. (radio_fijo=='n'))  call Prep(c,filas,columnas,ancho,fraccion_v0,fraccion_v2,fraccion_v2)
 
 
 
@@ -360,7 +356,7 @@ end do
     BG_part2=0
     
     !puntero_s=Q
-    
+    w=0
     
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !           aqui empieza el calculo de montecarlo
@@ -370,6 +366,7 @@ end do
 !*******Encontrar  ii,jj,kk
 
     !iter es el indice que recorrerá vectR, que es mas amigable para paralelizar 
+    !!$omp parallel do private(swap, ms, kk, num, jj, ii, sitioi, jfl, jcl, jkl, jfr, jcr, jkr, vecinos)
     do iter=1,Q
     
       
@@ -880,6 +877,7 @@ difa1=Lif(difa,energy,ang_l)
 
 145 continue
 end do
+!!$omp end parallel do
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !           aqui termina el calculo de montecarlo
@@ -976,7 +974,6 @@ end if
    
    write(13,3) time, radio_g, area_g,BG_part0,BG_part1,BG_part2,BG_part,mat_total1
    print*, time, radio_g, area_g,BG_part0,BG_part1,BG_part2,BG_part,mat_total1
-   if (radio_g>=28) guille=1
     
    3    FORMAT(I10,',',F10.3,',',F10.3,',',I10,',',I10,',',I10,',',I10,',',I10) 
 end if
@@ -986,7 +983,7 @@ end if
 !     Generacion de policristal parcial (corte de luz)
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-if ((mod(time,paso_luz)==0) .or. (guille==1))  then
+if ((mod(time,paso_luz)==0))  then
    Write( timew,'(I10)' )  time
    archivo = 'output/' // trim(adjustl(volumen1)) // 'x' // trim(adjustl(volumen2)) // 'x' // &
           trim(adjustl(volumen3)) // '_' // trim(adjustl(respuesta)) // '.txt'
@@ -1001,7 +998,6 @@ if ((mod(time,paso_luz)==0) .or. (guille==1))  then
      end do
    end do
    close(20)
-   if (guille==1) stop
 end if
 end do
 close(19)
