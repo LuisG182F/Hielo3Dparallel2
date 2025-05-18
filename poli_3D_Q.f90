@@ -75,10 +75,10 @@ integer                                 ::   mm,nn,ll,ms,veci,bordei,bordef,cent
 integer                                 ::   matrix,tarzan,centro0,centro00,centro1,centro2,radius,mat_total1
 real(pr)                                ::   radio_g,deltaGG,xx,ww,angulote,mini1,mini2, fraccion_v
 real(pr)                                ::   Hi,difa,difa1,ruleta,area_g,fraccion_v0,fraccion_v1,fraccion_v2
-integer,dimension(filas,columnas,ancho) ::   c
+integer, allocatable                    ::   c(:,:,:)
 
 integer,dimension(10,10,10)             ::   c1,c2,c3
-integer,dimension(filas*columnas*ancho) ::   vect,orient1, vectR
+integer, allocatable                    ::   vect(:), orient1(:), vectR(:)
 
 integer,dimension(26)                   ::   vecinos
 real(pr),dimension(26)                  ::   Hff,deltaG
@@ -99,6 +99,10 @@ centro=0
 bordei=0
 u=1
 
+allocate(vect(filas*columnas*ancho))
+allocate(orient1(filas*columnas*ancho))
+allocate(vectR(filas*columnas*ancho))
+allocate(c(filas, columnas, ancho))
 
 Q = ancho * filas * columnas    
 
@@ -1003,4 +1007,5 @@ end do
 close(19)
 close(13)
 
+deallocate(vect, orient1, vectR, c)
 end program grano_particulas_movil
