@@ -1,6 +1,6 @@
 # Variables
 FC ?= gfortran
-FFLAGS ?= -fopenmp -fcheck=all -g -Wall -pg -O2 -ffast-math -funroll-all-loops
+FFLAGS ?= -fopenmp -fcheck=all -g -Wall -O2 -ffast-math -funroll-all-loops
 
 # Archivos fuente y objetos
 SRC = presicion.f90 hielonn.f90 radio0.f90 radio1.f90 radio2.f90 cal_radio.f90 precipitado1.f90 Montecarlo.f90 poli_3D_Q.f90

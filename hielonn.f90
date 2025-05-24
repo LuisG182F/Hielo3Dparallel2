@@ -231,7 +231,7 @@ Write( timew,'(i10)' ) time
 archivo=trim(adjustl(directorio)) //'grains' // '_' // trim(adjustl(timew))//' '// trim(adjustl(conce)) // ' '  // '.ppm'  
 open(unit=100,file=archivo) 
 
-!encavezado del archivo
+!encabezado del archivo
 
 write(100,1010)'P3' 
 1010 format(A2) 
@@ -883,7 +883,138 @@ close(99)
 end subroutine
 
 
+!********************************************************************* 
+!                Function archivo_xyz (FORTRAN) 
+! 
+!  escribe la matriz x(i,j,k) como un archivo .xyz
+!
+!********************************************************************* 
 
+ subroutine archivo_xyz(c, filas, columnas, ancho, time, directorio)
+    implicit none
+    integer, intent(in) :: filas, columnas, ancho, time
+    integer, intent(in) :: c(filas, columnas, ancho)
+    character(len=*), intent(in) :: directorio
+    integer :: i, j, k, total, unit
+    character(len=20) :: etiqueta
+    character(100) :: archivo
+    character(20) :: time_str
+
+    ! Convertir time a string sin espacios
+    write(time_str,'(I0)') time
+
+    ! Construir nombre del archivo similar a Graph
+    archivo = trim(adjustl(directorio)) // 'output_' // trim(time_str) // '.xyz'
+
+    ! Contar elementos válidos (>=0)
+    total = 0
+    do i = 1, filas
+        do j = 1, columnas
+            do k = 1, ancho
+                if (c(i,j,k) >= 0) then
+                    total = total + 1
+                end if
+            end do
+        end do
+    end do
+
+    ! Abrir archivo nuevo con nombre dinámico
+    open(newunit=unit, file=archivo, status='replace')
+
+    ! Escribir encabezado XYZ
+    write(unit,*) total
+    write(unit,*) 'XYZ output del sistema c(i,j,k) time=' // trim(time_str)
+
+    ! Escribir datos: etiqueta y posición (i,j,k)
+    do i = 1, filas
+        do j = 1, columnas
+            do k = 1, ancho
+                if (c(i,j,k) == 0) then
+                    etiqueta = 'P' !particle
+                else
+                    write(etiqueta,'(A,I0)') 'G', c(i,j,k) !grain con el valor en c(i,j,k)
+                end if
+                write(unit,'(A,1X,I0,1X,I0,1X,I0)') trim(etiqueta), i, j, k
+            end do
+        end do
+    end do
+
+    close(unit)
+
+end subroutine 
+
+
+!********************************************************************* 
+!                Function archivo_lammpstrj (FORTRAN) 
+! 
+!  escribe la matriz x(i,j,k) como un archivo LAMMPS
+!
+!********************************************************************* 
+
+ 
+
+subroutine archivo_lammpstrj(c, filas, columnas, ancho, time, directorio)
+    implicit none
+    integer, intent(in) :: filas, columnas, ancho, time
+    integer, intent(in) :: c(filas, columnas, ancho)
+    character(len=*), intent(in) :: directorio
+    integer :: i, j, k, total, unit, id, tipo
+    character(100) :: archivo
+    character(20) :: time_str
+
+    ! Convertir time a string sin ceros a la izquierda
+    write(time_str,'(I0)') time
+
+    ! Construir nombre del archivo
+    archivo = trim(adjustl(directorio)) // 'output_' // trim(time_str) // '.lammpstrj'
+
+    ! Contar elementos válidos
+    total = 0
+    do i = 1, filas
+        do j = 1, columnas
+            do k = 1, ancho
+                if (c(i,j,k) >= 0) then
+                    total = total + 1
+                end if
+            end do
+        end do
+    end do
+
+    ! Abrir archivo
+    open(newunit=unit, file=archivo, status='replace')
+
+    ! Escribir encabezado LAMMPS
+    write(unit,*) 'ITEM: TIMESTEP'
+    write(unit,*) time
+    write(unit,*) 'ITEM: NUMBER OF ATOMS'
+    write(unit,*) total
+    write(unit,*) 'ITEM: BOX BOUNDS pp pp pp'
+    write(unit,*) 0, filas
+    write(unit,*) 0, columnas
+    write(unit,*) 0, ancho
+    write(unit,*) 'ITEM: ATOMS id type x y z'
+
+    ! Escribir partículas (id, tipo, coordenadas)
+    id = 0
+do i = 1, filas
+    do j = 1, columnas
+        do k = 1, ancho
+            if (c(i,j,k) >= 0) then
+                id = id + 1
+                if (c(i,j,k) == 0) then
+                    tipo = 1
+                else
+                    tipo = c(i,j,k) + 1
+                end if
+                write(unit,'(I8,1X,I4,1X,F8.3,1X,F8.3,1X,F8.3)') id, tipo, real(i)-0.5, real(j)-0.5, real(k)-0.5
+            end if
+        end do
+    end do
+end do
+
+
+    close(unit)
+end subroutine
 
 
   

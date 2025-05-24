@@ -66,10 +66,10 @@ use Montecarlo
 implicit none
 
 ! Definir N como una constante
-integer, parameter :: N = 50
+integer, parameter :: N = 500
 
 ! Usar N para definir las dimensiones de las matrices
-integer, parameter :: filas = N, columnas = N, ancho = N, stoptime = 100
+integer, parameter :: filas = N, columnas = N, ancho = 10, stoptime = 1000000
 character(len=60), parameter :: radio_fijo = 'n'
 
 
@@ -79,7 +79,7 @@ character(len=60), parameter :: radio_fijo = 'n'
 !ancho 5 para radio 0
 !ancho 7 para radio 1
 !ancho 9 para radio 2
-integer,parameter                       ::   paso=10,paso_area=10,paso_luz=500000
+integer,parameter                       ::   paso=5000,paso_area=1000,paso_luz=500000
 !efectos probailistico de las particulas_ fraccion de particulas moviles
 real(pr),parameter                      ::   casino=1.0
 
@@ -164,9 +164,9 @@ time0 = 0
 energy = 3
 precip ='pi'
           
-fraccion_v0 = 0.003_pr                                        !fraccion de materia 0
-fraccion_v1 = 0.01_pr                                        !fraccion de materia 1 
-fraccion_v2 = 0.014_pr                                        !fraccion de materia 2
+fraccion_v0 = 0.3_pr                                        !fraccion de materia 0
+fraccion_v1 = 1_pr                                        !fraccion de materia 1 
+fraccion_v2 = 1.4_pr                                        !fraccion de materia 2
 fraccion_v=fraccion_v1
 
 directorio = 'output/'
@@ -222,30 +222,28 @@ else
 !+              
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 
+!!$omp parallel do
 do k=1,Q
 orient1(k)=0
 end do
+!!omp end parallel do
 
-
-do k=1,ancho
-
+!!$omp parallel do collapse(3) private(s)
 do i=1,filas
+   do j=1,columnas
+      do k=1,ancho
 
-do j=1,columnas
+      !233 continue
+      s=int(Q*Rand())+1
 
-233 continue
-s=int(Q*Rand())+1
+      !if (s==0) goto 233
 
-if (s==0) goto 233
-
-c(i,j,k)=s
+      c(i,j,k)=s
                                        
+      end do
+   end do
 end do
-
-end do
-
-end do
-
+!!$omp end parallel do
 end if
 
  
@@ -318,18 +316,17 @@ do s=1,Q
 end do
 
 
-call graph(c,0,directorio,conce,filas,columnas,ancho,delta,distri_b)
-call mask(c,0,directorio,conce,filas,columnas,ancho,delta,distri_b)
-
-call tresD(c,0,directorio,conce,filas,columnas,ancho)
+!call graph(c,0,directorio,conce,filas,columnas,ancho,delta,distri_b)
+!call mask(c,0,directorio,conce,filas,columnas,ancho,delta,distri_b)
+!call tresD(c,0,directorio,conce,filas,columnas,ancho)
 !call distri(orient,0,directorio,conce,filas,columnas,ancho)
 !call misori(c,time,directorio,conce,filas,columnas,ancho)
-
-
+!call archivo_xyz(c, filas, columnas, ancho, time, directorio)
+!call archivo_lammpstrj(c, filas, columnas, ancho, time, directorio)
     
 archivo = trim(adjustl(directorio)) //'area'// '_' // 'medio'//' '// trim(adjustl(conce)) // ' '// '.txt' 
-
-open(unit=13,file=archivo)
+open(unit=13, file=archivo)
+flush(13)
 
 
  print*,'__________________________________________________________'
@@ -388,10 +385,9 @@ end do
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !           aqui empieza el calculo de montecarlo
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
     
 !*******Encontrar  ii,jj,kk
-
+    call omp_set_num_threads(4)  ! Fijar a 4 hilos
     !iter es el indice que recorrerá vectR, que es mas amigable para paralelizar 
 !$omp parallel do private(ii,jj,kk,swap)
     do iter=1,Q
@@ -436,17 +432,20 @@ end do
 if ((mod(time,paso)==0) .and. (time/=0)) then
      call graph(c,time,directorio,conce,filas,columnas,ancho,delta,distri_b)
      call mask(c,time,directorio,conce,filas,columnas,ancho,delta,distri_b)
-       call tresD(c,time,directorio,conce,filas,columnas,ancho) 
+     !call tresD(c,time,directorio,conce,filas,columnas,ancho) 
      !call distri(orient,time,directorio,conce,filas,columnas,ancho)
      !call misori(c,time,directorio,conce,filas,columnas,ancho)
+     !call archivo_xyz(c, filas, columnas, ancho, time, directorio)
+     !call archivo_lammpstrj(c, filas, columnas, ancho, time, directorio)
      end if
 
 
 if (mod(time,paso_area)==0)  then
 
 
+
 !******************************************************************* 
-!                 Calculo de la coordenada, area media   
+!                 Calculo de radio, area media   
 !*******************************************************************
 
  
@@ -461,9 +460,9 @@ do s=1,Q
    orient1(s)=0
 end do
 
-do k=1,ancho
-   do i=1,filas
-      do j=1,columnas
+do i=1,filas
+   do j=1,columnas
+      do k=1,ancho
          s = c(i,j,k)
          if (s/=0) then
          orient1(s) = orient1(s) + 1
@@ -513,6 +512,7 @@ end if
    end if
    
    write(13,3) time, radio_g, area_g,BG_part0,BG_part1,BG_part2,BG_part,mat_total1
+   flush(13)
    print*, time, radio_g, area_g,BG_part0,BG_part1,BG_part2,BG_part,mat_total1
     
    3    FORMAT(I10,',',F10.3,',',F10.3,',',I10,',',I10,',',I10,',',I10,',',I10) 
@@ -542,6 +542,5 @@ end if
 end do
 close(19)
 close(13)
-
 deallocate(vect, orient1, vectR, c)
 end program grano_particulas_movil
