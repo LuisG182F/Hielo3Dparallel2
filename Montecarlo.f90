@@ -29,11 +29,9 @@ implicit none
 !ancho 7 para radio 1
 !ancho 9 para radio 2
 !efectos probailistico de las particulas_ fraccion de particulas moviles
-! Definir N como una constante
-integer :: N = 100
 
 ! Usar N para definir las dimensiones de las matrices
-integer :: filas, columnas,ancho,stoptime 
+integer :: filas, columnas,ancho
 character(len=60)  :: radio_fijo 
 
 
@@ -43,25 +41,33 @@ real(pr),parameter                      ::   pi=3.14159
 !factores relacionados con la funcion de energia de activacion y superficial
 real(pr),parameter                      ::   beta=1.0,ang_l=20.0
 !cuanto mas chico es beta menor es la influencia de la temperatura
-integer                                 ::   delta,sip1,sip2,sip3,iii,jjj,kkk,i,j,k,s, BG_part0,BG_part1,BG_part2,BG_part,iter, temp
-integer                                 ::   time,puntero_s,swap,ii,jj,kk,w,num,sitioi,sitiof,time0
-integer                                 ::   jfl,jkl,jcl,jfr,jkr,jcr,volu,pastor,u1
+integer                                 ::   sip1,sip2,sip3,iii,jjj,kkk,i, BG_part0,BG_part1,BG_part2
+integer                                 ::   ii,jj,kk,sitioi,sitiof
+integer                                 ::   jfl,jkl,jcl,jfr,jkr,jcr,volu
 !factores relacionados con la funcion de energia superficial y con la posibilidad de rotacion de los granos
 integer                                 ::   energy
-integer                                 ::   Q,numero_g,e,mama,u
-integer                                 ::   mm,nn,ll,ms,veci,bordei,bordef,centro,bordeCT
-integer                                 ::   matrix,tarzan,centro0,centro00,centro1,centro2,radius,mat_total1
-real(pr)                                ::   radio_g,deltaGG,xx,ww,angulote,mini1,mini2, fraccion_v
-real(pr)                                ::   Hi,difa,difa1,ruleta,area_g,fraccion_v0,fraccion_v1,fraccion_v2
+integer                                 ::   Q,e,mama,u
+integer                                 ::   mm,nn,ll,veci,bordei,bordef,centro,bordeCT
+integer                                 ::   matrix,tarzan,centro0,centro00,centro1,centro2,radius
+real(pr)                                ::   deltaGG,xx,ww,mini1,mini2
+real(pr)                                ::   Hi,difa,difa1,ruleta
 integer, allocatable                    ::   c(:,:,:)
 
 integer,dimension(10,10,10)             ::   c1,c2,c3
-integer, allocatable                    ::   vect(:), orient1(:), vectR(:)
 
 integer,dimension(26)                   ::   vecinos
 real(pr),dimension(26)                  ::   Hff,deltaG
-character(len=200)                      ::   archivo,archivo1,precip
-character(len=60)                       ::   timew,volumen,volumen1,volumen2,volumen3,respuesta,conce,distri_b
+
+!inicializacion de variables
+veci=0
+bordect=0
+matrix=0
+centro=0
+bordei=0
+u=0 !no se si esta bien inicializarlo asi
+radius=0
+Q=filas*columnas*ancho
+
 
 
 
@@ -240,13 +246,13 @@ character(len=60)                       ::   timew,volumen,volumen1,volumen2,vol
                               
                     end select
                         
-                        ruleta=rand()
+                        ruleta=RandNew()
                         
                          if (ruleta>casino) goto 145
                          !print*, 'pase'
                          
                         tarzan=0
-                        23 e=int(Rand()*26)+1
+                        23 e=int(RandNew()*26)+1
                          
                         tarzan=tarzan+1
                         
@@ -368,7 +374,7 @@ character(len=60)                       ::   timew,volumen,volumen1,volumen2,vol
                                 veci=Ve(c,iii,jjj,kkk,filas,columnas,ancho);
                                 !veci=0
                                 matrix=Vecm(radius,iii,jjj,kkk,filas,columnas,ancho);
-                                bordeCT=Vect0(c,iii,jjj,kkk,filas,columnas,ancho,radius);
+                                bordeCT=Vect0(c,iii,jjj,kkk,filas,columnas,ancho);
                                                                              
                          case(1)
                                 
@@ -430,10 +436,10 @@ character(len=60)                       ::   timew,volumen,volumen1,volumen2,vol
                                    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
                             !pastor= jjj + ( iii-1 ) * columnas + ( kkk-1 ) * ( filas*columnas )
                                         
-                                       ! do u1=1,Q
-                                      !  if (vect(u1)==pastor) w=u1
-                                      !  end do
-                                     !   swap=vect(w)                
+                                        !do u1=1,Q
+                                        !if (vect(u1)==pastor) w=u1
+                                        !end do
+                                        !swap=vect(w)                
                           
                             
                             
@@ -515,7 +521,7 @@ if (volu==26) goto 145
 !&&&&&&&&&&&& Cristal puro uniforme &&&&&&&&&&&&&&&
 
     else
-                                                e=int(Rand()*26)+1
+                                                e=int(RandNew()*26)+1
                                                 sitiof=vecinos(e)
                                                     if ((sitioi==sitiof) .or. (sitiof==0)) then 
                                                         goto 145
@@ -546,7 +552,7 @@ difa1=Lif(difa,energy,ang_l)
     else
     ww=0
     if (difa1/=0) ww=(exp(-deltaGG/beta/difa1))*difa1
-    xx=Rand()
+    xx=RandNew()
         if (xx<ww) then
         
         c(ii,jj,kk)=sitiof

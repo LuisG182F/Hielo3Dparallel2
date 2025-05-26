@@ -12,15 +12,16 @@ use presicion
 !
 !*********************************************************************
 
-Integer function Vect0(c,ii,jj,kk,filas,columnas,ancho,radius) 
+Integer function Vect0(c,ii,jj,kk,filas,columnas,ancho) 
 IMPLICIT NONE  
-integer                                        :: filas,columnas,ancho,numero_gauss1,radius,numero_gauss2,vecino_1,vecino_2
+integer                                        :: filas,columnas,ancho,numero_gauss1,numero_gauss2,vecino_1,vecino_2
 integer                                        :: ii,jj,kk,jfl,jfr,jcl,jcr,jkl,jkr,mfl,mfr,mcl,mcr,mkl,mkr,s 
 integer,dimension(filas,columnas,ancho)        :: c 
 integer, dimension(98)                         :: vvecinos,vvecinoss 
 
 vect0=0
-
+vecino_1=0
+vecino_2=0
 
 jfl = ii-1 ;  if (jfl < 1)        jfl = filas 
 jcl = jj-1 ;  if (jcl < 1)        jcl = columnas 
@@ -304,11 +305,12 @@ end function
 
 Integer function Vec(c,ii,jj,kk,filas,columnas,ancho) 
 IMPLICIT NONE  
-integer                                        :: filas,columnas,ancho,rrrr, luis
+integer                                        :: filas,columnas,ancho,rrrr
 integer                                        :: ii,jj,kk,jfl,jfr,jcl,jcr,jkl,jkr,s 
 integer,dimension(filas,columnas,ancho)        :: c 
 integer, dimension(26)                         :: vvecinos 
 
+rrrr=0
 
 Vec=0               
 

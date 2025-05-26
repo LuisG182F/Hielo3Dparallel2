@@ -53,20 +53,20 @@ mat_total = columnas*filas*ancho*fraccion_v/100    !nro total de particulas
                  do while ((pepo-w)>=0)  
                     
                     
-                    radius=int(Rand()*3)
+                    radius=int(RandNew()*3)
                     
                     print*, pepo-w,radius
                                
-                    123 xx=Rand()*filas
+                    123 xx=RandNew()*filas
                     ii=int(xx)
                     
                     
-                    xx=Rand()*columnas
+                    xx=RandNew()*columnas
                     jj=int(xx)
                                 
                     
                   
-                    xx=Rand()*ancho
+                    xx=RandNew()*ancho
                     kk=int(xx)
                     
                     
@@ -251,16 +251,16 @@ else
                     
                     
                                
-                    122 xx=Rand()*filas
+                    122 xx=RandNew()*filas
                     ii=int(xx)
                     
                     
-                    xx=Rand()*columnas
+                    xx=RandNew()*columnas
                     jj=int(xx)
                                 
                     
                   
-                    xx=Rand()*ancho
+                    xx=RandNew()*ancho
                     kk=int(xx)
                     
                     

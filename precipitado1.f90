@@ -26,13 +26,16 @@ implicit none
 integer                                 ::   filas,columnas,ancho
 integer                                 ::   radius !radius es el radio de las impurezas 
 real(pr)                                ::   mat_total,fraccion_v0,fraccion_v1,fraccion_v2
-integer                                 ::   i,j,k,ir,jr,kr
-integer                                 ::   ii,jj,kk,delta,borde1,radio_ran
-integer                                 ::   pepo,mm,nn,ll,w,xx,matrix1,veci1
+integer                                 ::   ii,jj,kk
+integer                                 ::   pepo,mm,nn,ll,w,matrix1,veci1
+REAL(8)                                 ::   xx
 integer,dimension(filas,columnas,ancho) ::   c
-character(len=60)                       ::   distri_b,radio_fijo
 
         
+        !inicializacion de variables para arreglar warnings
+        matrix1=0
+
+
         !particulas de radio 2
         
         mat_total = columnas*filas*ancho*fraccion_v2/100._pr    !nro total de particulas radio 2
@@ -48,16 +51,16 @@ character(len=60)                       ::   distri_b,radio_fijo
                     
                     print*, pepo-w,radius
                                
-                    124 xx=Rand()*filas
+                    124 xx=RandNew()*filas
                     ii=int(xx)
                     
                     
-                    xx=Rand()*columnas
+                    xx=RandNew()*columnas
                     jj=int(xx)
                                 
                     
                   
-                    xx=Rand()*ancho
+                    xx=RandNew()*ancho
                     kk=int(xx)
 
                                 
@@ -120,16 +123,16 @@ character(len=60)                       ::   distri_b,radio_fijo
                     
                     print*, pepo-w,radius
                                
-                    123 xx=Rand()*filas
+                    123 xx=RandNew()*filas
                     ii=int(xx)
                     
                     
-                    xx=Rand()*columnas
+                    xx=RandNew()*columnas
                     jj=int(xx)
                                 
                     
                   
-                    xx=Rand()*ancho
+                    xx=RandNew()*ancho
                     kk=int(xx)
 
                                 
@@ -190,16 +193,16 @@ character(len=60)                       ::   distri_b,radio_fijo
                     
                     print*, pepo-w,radius
                                
-                    122 xx=Rand()*filas
+                    122 xx=RandNew()*filas
                     ii=int(xx)
                     
                     
-                    xx=Rand()*columnas
+                    xx=RandNew()*columnas
                     jj=int(xx)
                                 
                     
                   
-                    xx=Rand()*ancho
+                    xx=RandNew()*ancho
                     kk=int(xx)
 
                                 
@@ -258,13 +261,14 @@ implicit none
 integer                                 ::   filas,columnas,ancho
 integer                                 ::   radius !radius es el radio de las impurezas 
 real(pr)                                ::   mat_total,fraccion_v
-integer                                 ::   i,j,k,ir,jr,kr
-integer                                 ::   ii,jj,kk,delta,borde1,radio_ran
-integer                                 ::   pepo,mm,nn,ll,w,xx,matrix1,veci1
+integer                                 ::   i,j,k
+integer                                 ::   ii,jj,kk,delta
+integer                                 ::   pepo,mm,nn,ll,w,matrix1,veci1
+REAL(8)                                 ::   xx,kr,jr,ir
 integer,dimension(filas,columnas,ancho) ::   c
-character(len=60)                       ::   distri_b,radio_fijo
+character(len=60)                       ::   distri_b
 
-
+matrix1=0
 
 
 
@@ -340,16 +344,16 @@ else
                     
                     
                                
-                    122 xx=Rand()*filas
+                    122 xx=RandNew()*filas
                     ii=int(xx)
                     
                     
-                    xx=Rand()*columnas
+                    xx=RandNew()*columnas
                     jj=int(xx)
                                 
                     
                   
-                    xx=Rand()*ancho
+                    xx=RandNew()*ancho
                     kk=int(xx)
                     
                     
@@ -443,7 +447,7 @@ end subroutine Prep_r
 Integer function par(c,ii,jj,kk,filas,columnas,ancho) 
 IMPLICIT NONE  
 integer                                        :: filas,columnas,ancho,peruca
-integer                                        :: ii,jj,kk,jfl,jfr,jcl,jcr,jkl,jkr,mfl,mfr,mcl,mcr,mkl,mkr,s 
+integer                                        :: ii,jj,kk,jfl,jfr,jcl,jcr,jkl,jkr,s 
 integer,dimension(filas,columnas,ancho)        :: c 
 integer, dimension(98)                         :: vvecinos 
 

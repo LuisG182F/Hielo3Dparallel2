@@ -1,14 +1,13 @@
 module hielonn
 
 use presicion
-
  contains
 
 
 !****************************************************************
 !                         FUNCTION Rand0
 !
-!    Esta subrotine es para inicializar la función Rand()
+!    Esta subrotine es para inicializar la función RandNew()
 !
 !****************************************************************
 
@@ -19,7 +18,7 @@ implicit None
 integer                 :: Iseed1, Iseed2, Count
 integer, dimension(33)  :: Seed
 real(pr), dimension(2)  :: R
-real(pr)                :: Rand
+
 COMMON/RSEED/ISEED1,ISEED2
 Call System_Clock( Count )
 Seed = Count
@@ -32,7 +31,7 @@ end Subroutine Rand0
 
 
 !******************************************************************
-!                         Function Rand
+!                         Function RandNew
 !    
 !
 !     This is an adapted version of Subroutine RANECU written by 
@@ -45,7 +44,7 @@ end Subroutine Rand0
 !******************************************************************
    
    
-real(pr) function Rand()
+real(pr) function RandNew()
 implicit none
 real(pr)     ::  Uscale
 integer      ::  Iseed1, Iseed2, I1, I2,Iz
@@ -59,8 +58,8 @@ IF(ISEED1.LT.0) ISEED1=ISEED1+2147483563
       IF(ISEED2.LT.0) ISEED2=ISEED2+2147483399
            IZ=ISEED1-ISEED2
            IF(IZ.LT.1) IZ=IZ+2147483562
-              Rand = Iz * Uscale
-end function Rand
+              RandNew = Iz * Uscale
+end function RandNew
 
 
 !  *********************************************************************
@@ -151,8 +150,11 @@ End Subroutine timer0
 
 function Timer()
 implicit none
-integer :: Values(8), Mes(13), Anio(16), Ysec, Dsec, Msec, iii, Timer
+integer :: Values(8), Mes(13), Anio(16), Ysec, Dsec, Msec, iii
 character(10) :: Date, Times, Zone
+REAL(8) :: Timer
+
+
 COMMON/SUBTIME/Anio, Mes
 CALL DATE_AND_TIME(Date,Times,Zone,Values)
 Ysec = Anio(Values(1)-2001)     
@@ -814,7 +816,8 @@ end function
 !*********************************************************************
 
 subroutine misori(c,time,directorio,conce,filas,columnas,ancho)
-integer                                    :: filas,columnas,ancho,s1,s2,s3,s4,time,Q,difa
+integer                                    :: filas,columnas,ancho,s1,s2,s3,s4,time,Q
+REAL :: difa
 !integer,dimension(filas*columnas*ancho)   :: orient1
 integer,dimension (26)                     :: vveci
 character(100)                             :: archivo
@@ -932,9 +935,9 @@ end subroutine
                 if (c(i,j,k) == 0) then
                     etiqueta = 'P' !particle
                 else
-                    write(etiqueta,'(A,I0)') 'G', c(i,j,k) !grain con el valor en c(i,j,k)
+                    write(etiqueta,'(A)') 'G' !grain con el valor en c(i,j,k)
                 end if
-                write(unit,'(A,1X,I0,1X,I0,1X,I0)') trim(etiqueta), i, j, k
+                write(unit,'(A,1X,I0,1X,I0,1X,I0,1X,I0)') trim(etiqueta), i, j, k, c(i,j,k)
             end do
         end do
     end do

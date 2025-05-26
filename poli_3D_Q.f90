@@ -21,26 +21,6 @@
 !----------------------------VERSION LUIS 1.0
 !===========================================================================================================
 
-module tipos_locales
-    implicit none
-
-    type :: contexto_local
-        integer :: iter, swap, ms, kk, num, jj, ii, sitioi
-        integer :: jfl, jcl, jkl, jfr, jcr, jkr
-        integer :: vecinos, volu, i
-        integer :: sip1, sip2, sip3         ! ya las agregaste, son importantes para offsets
-        integer :: pastor, tarzan           ! también las tienes, seguro para otros indices
-        integer :: iii, jjj, kkk            ! índices para bloques vecinos en el código que mostraste
-        integer :: mm, nn, ll               ! índices internos de los do loops para copiar arrays
-        integer :: radius                   ! para los bucles que usan rango de -radius a radius
-        integer :: filas, columnas, ancho  ! límites para verificar índices y proteger accesos
-        real :: Hi, difa, e, sitiof, Hff, deltaGG, difa1, ww, xx
-        real :: ruleta, probabilidad
-    end type contexto_local
-
-end module tipos_locales
-
-
 program grano_particulas_movil
 
 use omp_lib
@@ -59,17 +39,15 @@ use radio1
 
 use radio2
 
-use tipos_locales
-
 use Montecarlo
 
 implicit none
 
 ! Definir N como una constante
-integer, parameter :: N = 500
+integer, parameter :: N = 100
 
 ! Usar N para definir las dimensiones de las matrices
-integer, parameter :: filas = N, columnas = N, ancho = 10, stoptime = 1000000
+integer, parameter :: filas = N, columnas = N, ancho = 10, stoptime = 1000
 character(len=60), parameter :: radio_fijo = 'n'
 
 
@@ -79,7 +57,7 @@ character(len=60), parameter :: radio_fijo = 'n'
 !ancho 5 para radio 0
 !ancho 7 para radio 1
 !ancho 9 para radio 2
-integer,parameter                       ::   paso=5000,paso_area=1000,paso_luz=500000
+integer,parameter                       ::   paso=1000,paso_area=10,paso_luz=500000
 !efectos probailistico de las particulas_ fraccion de particulas moviles
 real(pr),parameter                      ::   casino=1.0
 
@@ -87,31 +65,24 @@ real(pr),parameter                      ::   pi=3.14159
 !factores relacionados con la funcion de energia de activacion y superficial
 real(pr),parameter                      ::   beta=1.0,ang_l=20.0
 !cuanto mas chico es beta menor es la influencia de la temperatura
-integer                                 ::   delta,sip1,sip2,sip3,iii,jjj,kkk,i,j,k,s, BG_part0,BG_part1,BG_part2,BG_part,iter, temp
-integer                                 ::   time,puntero_s,swap,ii,jj,kk,w,num,sitioi,sitiof,time0
-integer                                 ::   jfl,jkl,jcl,jfr,jkr,jcr,volu,pastor,u1
+integer                                 ::   delta,i,j,k,s, BG_part0,BG_part1,BG_part2,BG_part,iter, temp
+integer                                 ::   time,swap,ii,jj,kk,w,num,time0
 !factores relacionados con la funcion de energia superficial y con la posibilidad de rotacion de los granos
 integer                                 ::   energy
-integer                                 ::   Q,numero_g,e,mama,u
-integer                                 ::   mm,nn,ll,ms,veci,bordei,bordef,centro,bordeCT
-integer                                 ::   matrix,tarzan,centro0,centro00,centro1,centro2,radius,mat_total1
-real(pr)                                ::   radio_g,deltaGG,xx,ww,angulote,mini1,mini2, fraccion_v
-real(pr)                                ::   Hi,difa,difa1,ruleta,area_g,fraccion_v0,fraccion_v1,fraccion_v2
+integer                                 ::   Q,numero_g,u
+integer                                 ::   ms,veci,bordei,centro,bordeCT
+integer                                 ::   matrix,radius,mat_total1
+real(pr)                                ::   radio_g,angulote, fraccion_v
+real(pr)                                ::   difa,area_g,fraccion_v0,fraccion_v1,fraccion_v2
 integer, allocatable                    ::   c(:,:,:)
 
-integer,dimension(10,10,10)             ::   c1,c2,c3
 integer, allocatable                    ::   vect(:), orient1(:), vectR(:)
 
-integer,dimension(26)                   ::   vecinos
-real(pr),dimension(26)                  ::   Hff,deltaG
 character(len=200)                      ::   archivo,archivo1,precip
 character(len=60)                       ::   timew,volumen,volumen1,volumen2,volumen3,respuesta,conce,distri_b
 character(len=10000)                    ::   directorio,directorio1
-type(contexto_local)                    ::   ctx
-
 
                                                                
-
 call rand0
 
 !parametros para arreglar warnings
@@ -162,7 +133,7 @@ distri_b = 'uniform'
 
 time0 = 0
 energy = 3
-precip ='pi'
+precip ='puro'
           
 fraccion_v0 = 0.3_pr                                        !fraccion de materia 0
 fraccion_v1 = 1_pr                                        !fraccion de materia 1 
@@ -222,19 +193,20 @@ else
 !+              
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 
-!!$omp parallel do
+!$omp parallel do
 do k=1,Q
 orient1(k)=0
 end do
-!!omp end parallel do
+!omp end parallel do
 
-!!$omp parallel do collapse(3) private(s)
+!$omp parallel do collapse(3) private(s)
 do i=1,filas
    do j=1,columnas
       do k=1,ancho
 
       !233 continue
-      s=int(Q*Rand())+1
+      !print *, "RandNew() = ", RandNew()
+      s=int(Q*RandNew())+1
 
       !if (s==0) goto 233
 
@@ -243,7 +215,7 @@ do i=1,filas
       end do
    end do
 end do
-!!$omp end parallel do
+!$omp end parallel do
 end if
 
  
@@ -316,7 +288,7 @@ do s=1,Q
 end do
 
 
-!call graph(c,0,directorio,conce,filas,columnas,ancho,delta,distri_b)
+call graph(c,0,directorio,conce,filas,columnas,ancho,delta,distri_b)
 !call mask(c,0,directorio,conce,filas,columnas,ancho,delta,distri_b)
 !call tresD(c,0,directorio,conce,filas,columnas,ancho)
 !call distri(orient,0,directorio,conce,filas,columnas,ancho)
@@ -368,7 +340,7 @@ temp=0
 
 ! Ahora desordenamos vectR usando Fisher–Yates
 do i = Q, 2, -1
-    j = int(Rand() * i) + 1  ! Número aleatorio entre 1 e i
+    j = int(RandNew() * i) + 1  ! Número aleatorio entre 1 e i
     ! Intercambiamos vectR(i) con vectR(j)
     temp = vectR(i)
     vectR(i) = vectR(j)
@@ -391,9 +363,8 @@ end do
     !iter es el indice que recorrerá vectR, que es mas amigable para paralelizar 
 !$omp parallel do private(ii,jj,kk,swap)
     do iter=1,Q
-    
       
-       !w=int(Rand()*(puntero_s))+1
+       !w=int(RandNew()*(puntero_s))+1
        swap=vectR(iter)
        ms=0    
        
@@ -431,7 +402,7 @@ end do
 !write(*,*) time
 if ((mod(time,paso)==0) .and. (time/=0)) then
      call graph(c,time,directorio,conce,filas,columnas,ancho,delta,distri_b)
-     call mask(c,time,directorio,conce,filas,columnas,ancho,delta,distri_b)
+     !call mask(c,time,directorio,conce,filas,columnas,ancho,delta,distri_b)
      !call tresD(c,time,directorio,conce,filas,columnas,ancho) 
      !call distri(orient,time,directorio,conce,filas,columnas,ancho)
      !call misori(c,time,directorio,conce,filas,columnas,ancho)

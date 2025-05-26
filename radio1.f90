@@ -746,7 +746,7 @@ end function
 
 Integer function Vet1(c,ii,jj,kk,filas,columnas,ancho) 
 IMPLICIT NONE  
-integer                                        :: filas,columnas,ancho,rrrr 
+integer                                        :: filas,columnas,ancho 
 integer                                        :: ii,jj,kk,jfl,jfr,jcl,jcr,jkl,jkr,s 
 integer,dimension(filas,columnas,ancho)        :: c 
 integer, dimension(98)                         :: vvecinos 
