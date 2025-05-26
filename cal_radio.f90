@@ -56,67 +56,9 @@ radiopp0=0
                  Vvecinos(26) = c(ii, jj,jkr)
 
 do s=1,26
-if (vvecinos(s)/=0) radiopp0=1
-end do 
-
-end function
-
-!*********************************************************************
-!                Function radiopp00 (FORTRAN)
-!
-!  Esta rutina calcula si la particula esta al lado de otra particula. 
-!  Arroja una variable pp0=1 si lo esta y pp0=0 si no lo esta. 
-!
-!*********************************************************************
-
-Integer function radiopp00(c,ii,jj,kk,filas,columnas,ancho)
-
-IMPLICIT NONE
-integer                                   :: filas,columnas,ancho,luis
-integer                                   :: ii,jj,kk,jfl,jfr,jcl,jcr,jkl,jkr,s
-integer,dimension(filas,columnas,ancho)   :: c
-integer, dimension(26)                    :: vvecinos
-
-luis=0
-radiopp00=0
-                 jfl = ii-1 ;  if (jfl < 1)        jfl = filas
-                 jcl = jj-1 ;  if (jcl < 1)        jcl = columnas
-                 jkl = kk-1 ;  if (jkl < 1)        jkl = ancho
-                 jfr = ii+1 ;  if (jfr > filas)    jfr = 1  
-                 jcr = jj+1 ;  if (jcr > columnas) jcr = 1
-                 jkr = kk+1 ;  if (jkr > ancho)    jkr = 1
-                 
-                 Vvecinos(1) = c(jfl, jcl,jkl)
-                 Vvecinos(2) = c(jfl, jj,jkl) 
-                 Vvecinos(3) = c(jfl, jcr,jkl)
-                 Vvecinos(4) = c(ii, jcl,jkl)
-                 Vvecinos(5) = c(ii, jcr,jkl)
-                 Vvecinos(6) = c(jfr, jcl,jkl)
-                 Vvecinos(7) = c(jfr, jj,jkl)
-                 Vvecinos(8) = c(jfr, jcr,jkl)
-                 Vvecinos(9) = c(jfl, jcl,kk)
-                 Vvecinos(10) = c(jfl, jj,kk)
-                 Vvecinos(11) = c(jfl, jcr,kk)
-                 Vvecinos(12) = c(ii, jcl,kk)
-                 Vvecinos(13) = c(ii, jcr,kk)
-                 Vvecinos(14) = c(jfr, jcl,kk)
-                 Vvecinos(15) = c(jfr, jj,kk)
-                 Vvecinos(16) = c(jfr, jcr,kk)
-                 Vvecinos(17) = c(jfl, jcl,jkr)
-                 Vvecinos(18) = c(jfl, jj,jkr)
-                 Vvecinos(19) = c(jfl, jcr,jkr)
-                 Vvecinos(20) = c(ii, jcl,jkr)
-                 Vvecinos(21) = c(ii, jcr,jkr)
-                 Vvecinos(22) = c(jfr, jcl,jkr)
-                 Vvecinos(23) = c(jfr, jj,jkr)
-                 Vvecinos(24) = c(jfr, jcr,jkr)
-                 Vvecinos(25) = c(ii, jj,jkl)
-                 Vvecinos(26) = c(ii, jj,jkr)
-
-do s=1,26
-if (vvecinos(s)/=0) luis=luis+1
-end do 
-if (luis==26) radiopp00=1
+if (vvecinos(s)/=0) radiopp0=radiopp0+1
+end do
+if (radiopp0==26)  radiopp0=1 !es de radio 0 
 
 end function
 
@@ -364,11 +306,11 @@ Vvecinos(93) = c(mfr, mcl,kk)
 
  Vvecinos(84) = c(mfr, mcr,mkl)
 
- 
 
 do s=1,98
-if (vvecinos(s)/=0) radiopp1=1
+if (Vvecinos(s)/=0) radiopp1=radiopp1+1
 end do
+if (radiopp1==98) radiopp1=1 !si radiopp1 es 1 es de radio 1
 
 
 
@@ -614,13 +556,10 @@ Vvecinos(93) = c(mfr, mcl,kk)
 
  
 
-
-
-do s=1,98
-if (vvecinos(s)==0) radiopp2=radiopp2+1
+do s=1,218
+if (vvecinos(s)/=0) radiopp2=radiopp2+1
 end do
-
-if(radiopp2<27) radiopp2=1
+if (radiopp2==218) radiopp2=1 !es de radio 2
 
 end function
 

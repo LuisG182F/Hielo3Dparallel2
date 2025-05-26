@@ -183,11 +183,10 @@ Q=filas*columnas*ancho
    centro1=radiopp1(c,ii,jj,kk,filas,columnas,ancho)
    centro2=radiopp2(c,ii,jj,kk,filas,columnas,ancho)
    centro0=radiopp0(c,ii,jj,kk,filas,columnas,ancho)
-   centro00=radiopp00(c,ii,jj,kk,filas,columnas,ancho)
    
-   if ((centro1==0)) radius=2
-   if ((centro0==0) .and. (centro2==1)) radius=1
-   if ((centro00==1))  radius=0
+   if ((centro0==1)) radius=0
+   if ((centro0==0) .and. (centro1==1)) radius=1
+   if ((centro1==0) .and. (centro2==1)) radius=2
    if (radius==8) goto 145
    else
    end if

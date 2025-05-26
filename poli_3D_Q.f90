@@ -47,7 +47,7 @@ implicit none
 integer, parameter :: N = 100
 
 ! Usar N para definir las dimensiones de las matrices
-integer, parameter :: filas = N, columnas = N, ancho = 10, stoptime = 1000
+integer, parameter :: filas = N, columnas = N, ancho = 10, stoptime = 10000
 character(len=60), parameter :: radio_fijo = 'n'
 
 
@@ -57,7 +57,7 @@ character(len=60), parameter :: radio_fijo = 'n'
 !ancho 5 para radio 0
 !ancho 7 para radio 1
 !ancho 9 para radio 2
-integer,parameter                       ::   paso=1000,paso_area=10,paso_luz=500000
+integer,parameter                       ::   paso=10000,paso_area=1000,paso_luz=500000
 !efectos probailistico de las particulas_ fraccion de particulas moviles
 real(pr),parameter                      ::   casino=1.0
 
@@ -133,7 +133,7 @@ distri_b = 'uniform'
 
 time0 = 0
 energy = 3
-precip ='puro'
+precip ='pi'
           
 fraccion_v0 = 0.3_pr                                        !fraccion de materia 0
 fraccion_v1 = 1_pr                                        !fraccion de materia 1 
@@ -338,7 +338,9 @@ print*,time
 
 temp=0
 
-! Ahora desordenamos vectR usando Fisher–Yates
+!!!!!!Ahora desordenamos vectR usando Fisher–Yates PARALELIZAR DE ALGUNA FORMA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!puede que haya que cambiar Fisher Yates por otra cosa!!!!!!!!!!!!!!!!!
+!!$omp parallel do       
 do i = Q, 2, -1
     j = int(RandNew() * i) + 1  ! Número aleatorio entre 1 e i
     ! Intercambiamos vectR(i) con vectR(j)
@@ -346,7 +348,8 @@ do i = Q, 2, -1
     vectR(i) = vectR(j)
     vectR(j) = temp
 end do
-    
+!!$omp end parallel do
+
     BG_part0=0
     BG_part1=0
     BG_part2=0
@@ -359,9 +362,11 @@ end do
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 !*******Encontrar  ii,jj,kk
-    call omp_set_num_threads(4)  ! Fijar a 4 hilos
+    call omp_set_num_threads(1)  ! Fijar a 4 hilos
     !iter es el indice que recorrerá vectR, que es mas amigable para paralelizar 
-!$omp parallel do private(ii,jj,kk,swap)
+!$omp parallel do                                    &
+!$omp   private(iter, ii, jj, kk, swap, ms, num)     &
+!$omp   reduction(+:BG_part0,BG_part1,BG_part2)
     do iter=1,Q
       
        !w=int(RandNew()*(puntero_s))+1
