@@ -47,7 +47,7 @@ implicit none
 integer, parameter :: N = 100
 
 ! Usar N para definir las dimensiones de las matrices
-integer, parameter :: filas = N, columnas = N, ancho = 10, stoptime = 10000
+integer, parameter :: filas = N, columnas = N, ancho = 100, stoptime = 100
 character(len=60), parameter :: radio_fijo = 'n'
 
 
@@ -57,9 +57,9 @@ character(len=60), parameter :: radio_fijo = 'n'
 !ancho 5 para radio 0
 !ancho 7 para radio 1
 !ancho 9 para radio 2
-integer,parameter                       ::   paso=1000,paso_area=1000,paso_luz=500000
+integer,parameter                       ::   paso=10,paso_area=10,paso_luz=500000
 !efectos probailistico de las particulas_ fraccion de particulas moviles
-real(pr),parameter                      ::   casino=1.0
+real(pr),parameter                      ::   casino=0.5
 
 real(pr),parameter                      ::   pi=3.14159
 !factores relacionados con la funcion de energia de activacion y superficial
@@ -135,9 +135,9 @@ time0 = 0
 energy = 3
 precip ='pi'
           
-fraccion_v0 = 2_pr                                        !fraccion de materia 0
+fraccion_v0 = 0.3_pr                                        !fraccion de materia 0
 fraccion_v1 = 1_pr                                        !fraccion de materia 1 
-fraccion_v2 = 2_pr                                        !fraccion de materia 2
+fraccion_v2 = 1.4_pr                                        !fraccion de materia 2
 fraccion_v=fraccion_v1
 
 directorio = 'output/'
