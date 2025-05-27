@@ -57,7 +57,7 @@ character(len=60), parameter :: radio_fijo = 'n'
 !ancho 5 para radio 0
 !ancho 7 para radio 1
 !ancho 9 para radio 2
-integer,parameter                       ::   paso=10000,paso_area=1000,paso_luz=500000
+integer,parameter                       ::   paso=1000,paso_area=1000,paso_luz=500000
 !efectos probailistico de las particulas_ fraccion de particulas moviles
 real(pr),parameter                      ::   casino=1.0
 
@@ -135,9 +135,9 @@ time0 = 0
 energy = 3
 precip ='pi'
           
-fraccion_v0 = 0.3_pr                                        !fraccion de materia 0
+fraccion_v0 = 2_pr                                        !fraccion de materia 0
 fraccion_v1 = 1_pr                                        !fraccion de materia 1 
-fraccion_v2 = 1.4_pr                                        !fraccion de materia 2
+fraccion_v2 = 2_pr                                        !fraccion de materia 2
 fraccion_v=fraccion_v1
 
 directorio = 'output/'
@@ -253,8 +253,8 @@ close(45)
 
 
 
-if ((precip=='pi') .and. (radio_fijo=='s'))  call Prep_r(c,filas,columnas,ancho,fraccion_v1, distri_b,radius)
-if ((precip=='pi') .and. (radio_fijo=='n'))  call Prep(c,filas,columnas,ancho,fraccion_v0,fraccion_v2,fraccion_v2)
+if ((precip=='pi') .and. (radio_fijo=='s'))  call Prep_r(c,filas,columnas,ancho,fraccion_v, distri_b,radius)
+if ((precip=='pi') .and. (radio_fijo=='n'))  call Prep(c,filas,columnas,ancho,fraccion_v0,fraccion_v1,fraccion_v2)
 
 
 
@@ -362,7 +362,7 @@ end do
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 !*******Encontrar  ii,jj,kk
-    call omp_set_num_threads(1)  ! Fijar a 4 hilos
+    call omp_set_num_threads(4)  ! Fijar a 4 hilos
     !iter es el indice que recorrerá vectR, que es mas amigable para paralelizar 
 !$omp parallel do                                    &
 !$omp   private(iter, ii, jj, kk, swap, ms, num)     &
@@ -386,7 +386,13 @@ end do
                      jj=columnas
             end if
             
-       call Montecarlo_parallel(ii,jj,kk,c,filas,columnas,ancho,radio_fijo,energy,BG_part0,BG_part1,BG_part2) 
+      if (c(ii,jj,kk)==0) then
+      !$omp critical
+       call Montecarlo_parallel(ii,jj,kk,c,filas,columnas,ancho,radio_fijo,energy,BG_part0,BG_part1,BG_part2)
+      !$omp end critical
+else
+      call Montecarlo_parallel(ii,jj,kk,c,filas,columnas,ancho,radio_fijo,energy,BG_part0,BG_part1,BG_part2)
+      end if
 
 end do
 !$omp end parallel do

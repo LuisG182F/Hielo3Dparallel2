@@ -48,7 +48,7 @@ integer                                 ::   jfl,jkl,jcl,jfr,jkr,jcr,volu
 integer                                 ::   energy
 integer                                 ::   Q,e,mama,u
 integer                                 ::   mm,nn,ll,veci,bordei,bordef,centro,bordeCT
-integer                                 ::   matrix,tarzan,centro0,centro00,centro1,centro2,radius
+integer                                 ::   matrix,tarzan,centro0,centro1,centro2,radius
 real(pr)                                ::   deltaGG,xx,ww,mini1,mini2
 real(pr)                                ::   Hi,difa,difa1,ruleta
 integer, allocatable                    ::   c(:,:,:)
@@ -319,7 +319,7 @@ Q=filas*columnas*ancho
                      sip1=iii-ii
                      sip2=jjj-jj
                      sip3=kkk-kk
-                     !tarzan=0
+                     
                      
              
               
@@ -371,7 +371,6 @@ Q=filas*columnas*ancho
                     
                          case(0)
                                 veci=Ve(c,iii,jjj,kkk,filas,columnas,ancho);
-                                !veci=0
                                 matrix=Vecm(radius,iii,jjj,kkk,filas,columnas,ancho);
                                 bordeCT=Vect0(c,iii,jjj,kkk,filas,columnas,ancho);
                                                                              
@@ -393,14 +392,10 @@ Q=filas*columnas*ancho
                               
                     end select
                     
-                                  !if ((veci==1) .or.  (matrix==1) .or. (bordef==0)) then
-                                  !tiene particulas al lado, esta fuera de la zona de callculo y la particula se salio del BG
+                                  
                                   if ((veci==1) .or.  (matrix==1) .or. (bordeCT==0)) then
                                   !tiene particulas al lado, esta fuera de la zona de callculo y la particula se descentro del BG
-                                  !if (((veci==1) .or.  (matrix==1)) .or. ((bordei==1) .and. (bordeCT==0))) then
-                                  !tiene particulas al lado, esta fuera de la zona de callculo o si estaba en BG y se salio 
-                                  !if ((veci==1) .or.  (matrix==1)) then
-                                  !tiene particulas al lado, esta fuera de la zona de callculo 
+                                  
                                   
                                   
                                         do mm=-radius,radius,1

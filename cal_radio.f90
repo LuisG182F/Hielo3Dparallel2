@@ -58,7 +58,11 @@ radiopp0=0
 do s=1,26
 if (vvecinos(s)/=0) radiopp0=radiopp0+1
 end do
-if (radiopp0==26)  radiopp0=1 !es de radio 0 
+if (radiopp0==26)  then
+radiopp0=1 !es de radio 0 
+else
+radiopp0=0
+end if
 
 end function
 
@@ -310,7 +314,11 @@ Vvecinos(93) = c(mfr, mcl,kk)
 do s=1,98
 if (Vvecinos(s)/=0) radiopp1=radiopp1+1
 end do
-if (radiopp1==98) radiopp1=1 !si radiopp1 es 1 es de radio 1
+if (radiopp1==98) then
+radiopp1=1 !si radiopp1 es 1 es de radio 1
+else
+radiopp1=0
+end if
 
 
 
@@ -331,7 +339,7 @@ IMPLICIT NONE
 integer                                   :: filas,columnas,ancho
 integer                                   :: ii,jj,kk,jfl,jfr,jcl,jcr,jkl,jkr,mfl,mfr,mcl,mcr,mkl,mkr,s
 integer,dimension(filas,columnas,ancho)   :: c
-integer, dimension(98)                    :: vvecinos
+integer, dimension(218)                    :: vvecinos
 
 jfl = ii-1 ;  if (jfl < 1)        jfl = filas
 jcl = jj-1 ;  if (jcl < 1)        jcl = columnas
@@ -559,7 +567,11 @@ Vvecinos(93) = c(mfr, mcl,kk)
 do s=1,218
 if (vvecinos(s)/=0) radiopp2=radiopp2+1
 end do
-if (radiopp2==218) radiopp2=1 !es de radio 2
+if (radiopp2==218) then 
+radiopp2=1 !es de radio 2
+else
+radiopp2=0
+end if
 
 end function
 

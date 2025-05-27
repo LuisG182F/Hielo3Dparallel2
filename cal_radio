@@ -56,9 +56,9 @@ pp0=0
                  Vvecinos(26) = c(ii, jj,jkr)
 
 do s=1,26
-if (vvecinos(s)/=0) pp0=1
-
+if (vvecinos(s)/=0) pp0=pp0+1
 end do
+if (pp0==26) then pp0=1 !es de radio 0 
 
 end function
 
@@ -71,8 +71,8 @@ end function
 !*********************************************************************
 !                Function radiopp1 (FORTRAN)
 !
-!  Esta rutina calcula si la particula esta al lado de otra particula. 
-!  Arroja una variable pp1=1 si lo esta y pp1=0 si no lo esta. 
+!  Esta rutina calcula el radio de la particula. 
+!  Arroja una variable pp1=1 si es radio=1 y pp1=0 si no lo es. 
 !
 !*********************************************************************
 
@@ -307,8 +307,9 @@ Vvecinos(93) = c(mfr, mcl,kk)
  
 
 do s=1,98
-if (Vvecinos(s)/=0) pp1=1
+if (Vvecinos(s)/=0) pp1=pp1+1
 end do
+if (pp1==98) then pp1==1 !si pp1 es 1 es de radio 1
 end function
 
 
@@ -723,8 +724,9 @@ scl=jj-3
  vvecinos(218) = c(sfr, scl,skr)
 
 do s=1,218
-if (vvecinos(s)/=0) pp2=1
+if (vvecinos(s)/=0) pp2=pp2+1
 end do
+if (pp2==218) then pp2=1 !es de radio 2
 
 
 end function

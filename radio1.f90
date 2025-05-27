@@ -733,6 +733,7 @@ Vvecinos(93) = c(mfr, mcl,kk)
 do s=1,98
 if (Vvecinos(s)==0) ve1=1
 end do
+
 end function
 
 
@@ -792,8 +793,10 @@ vet1=1
 
 
 do s=1,26
-if (vvecinos(s)/=0) vet1=0
+if (vvecinos(s)==0) vet1=vet1+1
 end do 
+if (vet1==26) vet1=1
+
 
 end function
 
