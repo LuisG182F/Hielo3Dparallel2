@@ -44,10 +44,10 @@ use Montecarlo
 implicit none
 
 ! Definir N como una constante
-integer, parameter :: N = 50
+integer, parameter :: N = 500
 
 ! Usar N para definir las dimensiones de las matrices
-integer, parameter :: filas = N, columnas = N, ancho = 50, stoptime = 100
+integer, parameter :: filas = N, columnas = 10, ancho = N, stoptime = 1000000
 character(len=60), parameter :: radio_fijo = 'n'
 
 
@@ -57,7 +57,7 @@ character(len=60), parameter :: radio_fijo = 'n'
 !ancho 5 para radio 0
 !ancho 7 para radio 1
 !ancho 9 para radio 2
-integer,parameter                       ::   paso=10,paso_area=10,paso_luz=500000
+integer,parameter                       ::   paso=10000,paso_area=100,paso_luz=500000
 !efectos probailistico de las particulas_ fraccion de particulas moviles
 real(pr),parameter                      ::   casino=1
 
@@ -137,9 +137,9 @@ time0 = 0
 energy = 3
 precip ='pi'
           
-fraccion_v0 = 0.5_pr                                     !fraccion de materia 0
-fraccion_v1 = 0                                        !fraccion de materia 1 
-fraccion_v2 = 0.5_pr                                        !fraccion de materia 2
+fraccion_v0 = 0.3_pr                                     !fraccion de materia 0
+fraccion_v1 = 1_pr                                        !fraccion de materia 1 
+fraccion_v2 = 1.4_pr                                        !fraccion de materia 2
 fraccion_v=fraccion_v1
 
 directorio = 'output/'
@@ -238,7 +238,7 @@ end do
 !!!!!!!!!!!!!!!!!defino los bloques de paralelización!!!!!!!!!!!!!!!!!!!!!
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%&
 
-call omp_set_num_threads(1)               ! indicamos que deseamos usar hasta 4 hilos
+call omp_set_num_threads(4)               ! indicamos que deseamos usar hasta 4 hilos
 Nhilos     = omp_get_max_threads()
 
 tam_bloque = Q/Nhilos
