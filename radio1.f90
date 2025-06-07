@@ -752,7 +752,7 @@ integer                                        :: ii,jj,kk,jfl,jfr,jcl,jcr,jkl,j
 integer,dimension(filas,columnas,ancho)        :: c 
 integer, dimension(98)                         :: vvecinos 
 
-vet1=1
+vet1=0
                  jfl = ii-1 ;  if (jfl < 1)        jfl = filas
                  jcl = jj-1 ;  if (jcl < 1)        jcl = columnas
                  jkl = kk-1 ;  if (jkl < 1)        jkl = ancho
@@ -795,7 +795,12 @@ vet1=1
 do s=1,26
 if (vvecinos(s)==0) vet1=vet1+1
 end do 
-if (vet1==26) vet1=1
+if (vet1==26) then
+vet1=1
+else 
+vet1=0
+end if
+
 
 
 end function

@@ -35,14 +35,17 @@ integer :: filas, columnas,ancho
 character(len=60)  :: radio_fijo 
 
 
-real(pr),parameter                      ::   casino=1.0
-
 real(pr),parameter                      ::   pi=3.14159
+real(pr),parameter                      ::   casino0=0.5
+real(pr),parameter                      ::   casino1=0.2
+real(pr),parameter                      ::   casino2=0.2
+
 !factores relacionados con la funcion de energia de activacion y superficial
 real(pr),parameter                      ::   beta=1.0,ang_l=20.0
 !cuanto mas chico es beta menor es la influencia de la temperatura
 integer                                 ::   sip1,sip2,sip3,iii,jjj,kkk,i, BG_part0,BG_part1,BG_part2
 integer                                 ::   ii,jj,kk,sitioi,sitiof
+integer                                 ::   cont_radio
 integer                                 ::   jfl,jkl,jcl,jfr,jkr,jcr,volu
 !factores relacionados con la funcion de energia superficial y con la posibilidad de rotacion de los granos
 integer                                 ::   energy
@@ -57,6 +60,7 @@ integer,dimension(10,10,10)             ::   c1,c2,c3
 
 integer,dimension(26)                   ::   vecinos
 real(pr),dimension(26)                  ::   Hff,deltaG
+real(pr)                      ::   casino
 
 !inicializacion de variables
 veci=0
@@ -67,7 +71,7 @@ bordei=0
 u=0 !no se si esta bien inicializarlo asi
 radius=0
 Q=filas*columnas*ancho
-
+casino=1
 
 
 
@@ -180,18 +184,20 @@ Q=filas*columnas*ancho
    if (radio_fijo=='n') then
 
    radius=8
+   centro0=radiopp0(c,ii,jj,kk,filas,columnas,ancho)
    centro1=radiopp1(c,ii,jj,kk,filas,columnas,ancho)
    centro2=radiopp2(c,ii,jj,kk,filas,columnas,ancho)
-   centro0=radiopp0(c,ii,jj,kk,filas,columnas,ancho)
+      !print*, centro0, centro1, centro2
    
    if ((centro0==1)) radius=0
-   if ((centro0==0) .and. (centro1==1)) radius=1
-   if ((centro1==0) .and. (centro2==1)) radius=2
-   if (radius==8) goto 145
+   if ((centro0==0) .and. (centro1==1) .and. (centro2==2)) radius=1
+   if ((centro1==1) .and. (centro2==1) .and. (centro0==0)) radius=2
+   if ((radius/=0) .and. (radius/=1) .and. (radius/=2)) goto 145
    else
    end if
-   
- 
+   !print*,"el radio es", radius
+   if (radius==0) cont_radio=cont_radio+1
+
   
    
    
@@ -218,11 +224,10 @@ Q=filas*columnas*ancho
                                                              
                                bordei=Vec2(c,ii,jj,kk,filas,columnas,ancho); 
                                 matrix=Vecm2(radius,ii,jj,kk,filas,columnas,ancho);
-                                centro=Vet2(c,ii,jj,kk,filas,columnas,ancho)
-                                
-                                
+                                centro=Vet2(c,ii,jj,kk,filas,columnas,ancho)                                
                              
                     end select
+                    !print*, bordei,matrix,centro
 
                          if ((bordei==0) .or. (matrix==1) .or. (centro==0))  goto 145
                         
@@ -234,19 +239,20 @@ Q=filas*columnas*ancho
                          case(0)
                                 
                           BG_part0=BG_part0+1
+                          casino=casino0
+                          
                                                                              
                         case(1)
                           BG_part1=BG_part1+1
-        
+                          casino=casino1
+                          
                         case(2)
                                 
                           BG_part2=BG_part2+1     
-                                
-                              
+                          casino=casino2    
                     end select
                         
                         ruleta=RandNew()
-                        
                          if (ruleta>casino) goto 145
                          !print*, 'pase'
                          
@@ -370,6 +376,7 @@ Q=filas*columnas*ancho
                     Select case (radius)  
                     
                          case(0)
+                                
                                 veci=Ve(c,iii,jjj,kkk,filas,columnas,ancho);
                                 matrix=Vecm(radius,iii,jjj,kkk,filas,columnas,ancho);
                                 bordeCT=Vect0(c,iii,jjj,kkk,filas,columnas,ancho);
@@ -532,9 +539,9 @@ if (volu==26) goto 145
                                                     end do
     end if
 
-!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-!   Calculo de la variacion del hamiltoneano
-!_____________________________________________
+!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!   Calculo de la variacion del hamiltoneano    !!!!aqui se cambia c(i,j,k)!!!!
+!_____________________________________________!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 difa=abs((sitioi-sitiof)*90.0/Q) 

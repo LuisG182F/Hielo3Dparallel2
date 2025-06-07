@@ -44,10 +44,10 @@ use Montecarlo
 implicit none
 
 ! Definir N como una constante
-integer, parameter :: N = 100
+integer, parameter :: N = 50
 
 ! Usar N para definir las dimensiones de las matrices
-integer, parameter :: filas = N, columnas = N, ancho = 10, stoptime = 1000
+integer, parameter :: filas = N, columnas = N, ancho = 50, stoptime = 100
 character(len=60), parameter :: radio_fijo = 'n'
 
 
@@ -57,7 +57,7 @@ character(len=60), parameter :: radio_fijo = 'n'
 !ancho 5 para radio 0
 !ancho 7 para radio 1
 !ancho 9 para radio 2
-integer,parameter                       ::   paso=100,paso_area=100,paso_luz=500000
+integer,parameter                       ::   paso=10,paso_area=10,paso_luz=500000
 !efectos probailistico de las particulas_ fraccion de particulas moviles
 real(pr),parameter                      ::   casino=1
 
@@ -68,8 +68,8 @@ real(pr),parameter                      ::   beta=1.0,ang_l=20.0
 integer                                 ::   delta,i,j,k,s, BG_part0,BG_part1,BG_part2,BG_part,iter, temp
 integer                                 ::   time,swap,ii,jj,kk,w,num,time0
 !factores relacionados con la funcion de energia superficial y con la posibilidad de rotacion de los granos
-integer                                 ::   energy
-integer                                 ::   Q,numero_g,u
+integer                                 ::   energy, Nhilos,thread_id,inicio,fin,tam_bloque
+integer                                 ::   Q,numero_g,u, materia, cont_radio
 integer                                 ::   ms,veci,bordei,centro,bordeCT
 integer                                 ::   matrix,radius,mat_total1
 real(pr)                                ::   radio_g,angulote, fraccion_v
@@ -81,7 +81,7 @@ integer, allocatable                    ::   vect(:), orient1(:), vectR(:)
 character(len=200)                      ::   archivo,archivo1,precip
 character(len=60)                       ::   timew,volumen,volumen1,volumen2,volumen3,respuesta,conce,distri_b
 character(len=10000)                    ::   directorio,directorio1
-
+integer, allocatable                    ::   bloques(:,:)
                                                                
 call rand0
 
@@ -92,6 +92,8 @@ matrix=0
 centro=0
 bordei=0
 u=1
+inicio=0
+fin=0
 
 allocate(vect(filas*columnas*ancho))
 allocate(orient1(filas*columnas*ancho))
@@ -135,9 +137,9 @@ time0 = 0
 energy = 3
 precip ='pi'
           
-fraccion_v0 = 1_pr                                      !fraccion de materia 0
-fraccion_v1 = 1_pr                                        !fraccion de materia 1 
-fraccion_v2 = 1_pr                                       !fraccion de materia 2
+fraccion_v0 = 0.5_pr                                     !fraccion de materia 0
+fraccion_v1 = 0                                        !fraccion de materia 1 
+fraccion_v2 = 0.5_pr                                        !fraccion de materia 2
 fraccion_v=fraccion_v1
 
 directorio = 'output/'
@@ -193,13 +195,13 @@ else
 !+              
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 
-!$omp parallel do
+!!$omp parallel do
 do k=1,Q
 orient1(k)=0
 end do
-!omp end parallel do
+!!omp end parallel do
 
-!$omp parallel do collapse(3) private(s)
+!!$omp parallel do collapse(3) private(s)
 do i=1,filas
    do j=1,columnas
       do k=1,ancho
@@ -215,7 +217,7 @@ do i=1,filas
       end do
    end do
 end do
-!$omp end parallel do
+!!$omp end parallel do
 end if
 
  
@@ -231,6 +233,29 @@ end if
 do k=1,Q
    vect(k) = k
 end do
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%&
+!!!!!!!!!!!!!!!!!defino los bloques de paralelización!!!!!!!!!!!!!!!!!!!!!
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%&
+
+call omp_set_num_threads(1)               ! indicamos que deseamos usar hasta 4 hilos
+Nhilos     = omp_get_max_threads()
+
+tam_bloque = Q/Nhilos
+allocate(bloques(Nhilos, tam_bloque))
+
+
+!$omp parallel private(thread_id, inicio, fin, k)
+   thread_id = omp_get_thread_num()
+   inicio = thread_id * tam_bloque + 1
+   fin = (thread_id + 1) * tam_bloque
+   
+    do k = inicio, fin
+            bloques(thread_id + 1, k - inicio + 1) = vect(k)
+    end do
+!$omp end parallel
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%&
+
 
 !*************************************************************
 !
@@ -329,26 +354,18 @@ do time=time0,stoptime
 print*,time
 
 
-!························································································
-!
-!   Generacion de particulas o burbujas
-!
-!........................................................................................
-
-
-temp=0
-
-!!!!!!Ahora desordenamos vectR usando Fisher–Yates PARALELIZAR DE ALGUNA FORMA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!puede que haya que cambiar Fisher Yates por otra cosa!!!!!!!!!!!!!!!!!
-      
-do i = Q, 2, -1
-    j = int(RandNew() * i) + 1  ! Número aleatorio entre 1 e i
-    ! Intercambiamos vectR(i) con vectR(j)
-    temp = vectR(i)
-    vectR(i) = vectR(j)
-    vectR(j) = temp
-end do
-
+!$omp parallel private(thread_id,i,j,temp)
+   temp=0
+   thread_id = omp_get_thread_num()
+   
+    do i = tam_bloque, 2, -1
+       j = int(RandNew() * i) + 1  ! Número aleatorio entre 1 e i
+       ! Intercambiamos bloques(thread_id + 1,i) con bloques(thread_id + 1,j)
+       temp = bloques(thread_id + 1,i)
+       bloques(thread_id + 1,i) = bloques(thread_id + 1,j)
+       bloques(thread_id + 1,j) = temp
+    end do
+!$omp end parallel
 
     BG_part0=0
     BG_part1=0
@@ -356,22 +373,25 @@ end do
     
     !puntero_s=Q
     w=0
-    
+    cont_radio=0
+
+
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !           aqui empieza el calculo de montecarlo
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 !*******Encontrar  ii,jj,kk
-    call omp_set_num_threads(2)  ! Fijar a 4 hilos
+    
     !iter es el indice que recorrerá vectR, que es mas amigable para paralelizar 
-!$omp parallel do    &
-!$omp   private(iter, ii, jj, kk, swap, ms, num)     &
-!$omp   reduction(+:BG_part0,BG_part1,BG_part2)
-    do iter=1,Q
-      
-       !w=int(RandNew()*(puntero_s))+1
-       swap=vectR(iter)
-       ms=0    
+!$omp parallel    &
+!$omp   private(iter, ii, jj, kk, swap, ms, num,thread_id, radius)     &
+!$omp   reduction(+:BG_part0,BG_part1,BG_part2,cont_radio)
+
+   thread_id = omp_get_thread_num()
+   
+    do iter=1,tam_bloque
+      swap=bloques(thread_id + 1,iter)
+      ms=0    
        
        
        if(mod(swap,(filas*columnas))/=0) ms=1
@@ -386,16 +406,34 @@ end do
                      jj=columnas
             end if
             
-      if (c(ii,jj,kk)==0) then
-      !$omp critical
-       call Montecarlo_parallel(ii,jj,kk,c,filas,columnas,ancho,radio_fijo,energy,BG_part0,BG_part1,BG_part2)
-      !$omp end critical
-else
+            
+      if (mod(thread_id, 2) == 0) then
+      call Montecarlo_parallel(ii,jj,kk,c,filas,columnas,ancho,radio_fijo,energy,BG_part0,BG_part1,BG_part2)
+      end if
+
+      !$omp barrier
+
+      if (mod(thread_id, 2) == 1) then
       call Montecarlo_parallel(ii,jj,kk,c,filas,columnas,ancho,radio_fijo,energy,BG_part0,BG_part1,BG_part2)
       end if
 
 end do
-!$omp end parallel do
+!$omp end parallel
+
+!%%%%%%%%%%%%%%%verificacion cant de materia%%%%%%%%%%%%%%%%%
+materia=0
+do i=1,filas
+   do j=1,columnas
+      do k=1,ancho
+      if (c(i,j,k)==0) materia=materia+1
+      end do
+   end do
+ end do
+print*, "la cantidad de materia es:", materia
+!print*, "la cantidad de particulas radio 0 es:",cont_radio
+!%%%%%%%%%%%%%%%verificacion cant de materia%%%%%%%%%%%%%%%%%
+
+
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !           aqui termina el calculo de montecarlo

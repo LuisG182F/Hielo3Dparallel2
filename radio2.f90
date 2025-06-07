@@ -1287,8 +1287,7 @@ end do
 do s=1,218
 if ((vvecinos(s)/=vvecinos(rrrr)) .and. (vvecinos(s)/=0)) vec2=1 
 end do 
- 
- 	 
+
 end function
 
 
@@ -1314,7 +1313,7 @@ integer:: ii,jj,kk,jfl,jfr,jcl,jcr,jkl,jkr,mfl,mfr,mcl,mcr,mkl,mkr,s
 
 
 integer,dimension(filas,columnas,ancho):: c
-integer, dimension(218) :: vvecinos
+integer, dimension(98) :: vvecinos
 
 vet2=1
 
@@ -1524,8 +1523,13 @@ Vvecinos(93) = c(mfr, mcl,kk)
  vvecinos(98)=c(ii,jj,mkl)
  
 do s=1,98
-if(vvecinos(s)/=0) vet2=0
-end do
+if (vvecinos(s)==0) vet2=vet2+1
+end do 
+if (vet2==99) then
+vet2=1
+else 
+vet2=0
+end if
  	 
 end function
 

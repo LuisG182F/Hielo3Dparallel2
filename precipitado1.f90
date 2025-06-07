@@ -44,7 +44,7 @@ integer,dimension(filas,columnas,ancho) ::   c
         w=0
         
 
-        do while ((pepo-w)>=0)  
+        do while ((pepo-w)>0)  
                     
                     
                     
@@ -116,7 +116,7 @@ integer,dimension(filas,columnas,ancho) ::   c
 
 
                  w=0
-                 do while ((pepo-w)>=0)  
+                 do while ((pepo-w)>0)  
                     
                     
                     
@@ -186,7 +186,7 @@ integer,dimension(filas,columnas,ancho) ::   c
 
 
                  w=0
-                 do while ((pepo-w)>=0)  
+                 do while ((pepo-w)>0)  
                     
                     
                     
