@@ -12,7 +12,6 @@ use hielonn
 
  contains
 
-
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !+
 !+     Funcion generacion de los precipitados iniciales

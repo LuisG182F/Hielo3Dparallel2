@@ -36,9 +36,9 @@ character(len=60)  :: radio_fijo
 
 
 real(pr),parameter                      ::   pi=3.14159
-real(pr),parameter                      ::   casino0=1
-real(pr),parameter                      ::   casino1=1
-real(pr),parameter                      ::   casino2=1
+real(pr),parameter                      ::   casino0=0.005
+real(pr),parameter                      ::   casino1=0.005
+real(pr),parameter                      ::   casino2=0.005
 
 !factores relacionados con la funcion de energia de activacion y superficial
 real(pr),parameter                      ::   beta=1.0,ang_l=20.0
@@ -196,7 +196,6 @@ casino=1
    else
    end if
    !print*,"el radio es", radius
-   if (radius==0) cont_radio=cont_radio+1
 
   
    
