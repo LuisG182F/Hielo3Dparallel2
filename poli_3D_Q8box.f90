@@ -44,10 +44,10 @@ use Montecarlo
 implicit none
 
 ! Definir N como una constante
-integer, parameter :: N = 100
+integer, parameter :: N = 500
 
 ! Usar N para definir las dimensiones de las matrices
-integer, parameter :: filas = N, columnas = 100, ancho = N, stoptime = 100
+integer, parameter :: filas = N, columnas = 10, ancho = N, stoptime = 10000000
 character(len=60), parameter :: radio_fijo = 'n'
 
 
@@ -57,7 +57,7 @@ character(len=60), parameter :: radio_fijo = 'n'
 !ancho 5 para radio 0
 !ancho 7 para radio 1
 !ancho 9 para radio 2
-integer,parameter                       ::   paso=100,paso_area=10,paso_luz=500000
+integer,parameter                       ::   paso=500000,paso_area=10000,paso_luz=1000000
 !efectos probailistico de las particulas_ fraccion de particulas moviles
 real(pr),parameter                      ::   casino=1
 
@@ -107,6 +107,8 @@ Write( volumen1,'(I10)' )  filas
 Write( volumen2,'(I10)' )  columnas
 Write( volumen3,'(I10)' )  ancho
 
+
+
 volumen = 'output/' // trim(adjustl(volumen1)) // 'x' // &
           trim(adjustl(volumen2)) // 'x' // trim(adjustl(volumen3)) // '_' // &
           trim(adjustl(respuesta)) // '.txt'
@@ -128,17 +130,18 @@ volumen = 'output/' // trim(adjustl(volumen1)) // 'x' // &
 !distri_b es como vamos a distribuir a las particulas
 !distri_b = 'uniforme' (es uniforme)  o distri_b = 'unifor' (es random)
 
-respuesta = 's'
+
+respuesta = 'n'
 
 distri_b = 'uniform'
 
-time0 = 0
+time0 = 1000000
 energy = 3
-precip ='pi'
+precip ='pii'
           
-fraccion_v0 = 0.3_pr                                     !fraccion de materia 0
+fraccion_v0 = 0.3_pr                                      !fraccion de materia 0
 fraccion_v1 = 1_pr                                        !fraccion de materia 1 
-fraccion_v2 = 1.4_pr                                        !fraccion de materia 2
+fraccion_v2 = 1.4_pr                                       !fraccion de materia 2
 fraccion_v=fraccion_v1
 
 directorio = 'output/'
@@ -162,6 +165,7 @@ if (radio_fijo=='s') radius =1
 if (respuesta=='n') then
 
 
+
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !+
 !+     Lectura de policristal inicial
@@ -169,9 +173,13 @@ if (respuesta=='n') then
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
      Write( timew,'(I10)' ) time0
-     archivo = trim(adjustl(directorio1)) //trim(adjustl(volumen))// '_' // trim(adjustl(timew))// ' ' //'.txt'
+     !archivo = trim(adjustl(directorio1)) //trim(adjustl(volumen))// '_' // trim(adjustl(timew))// ' ' //'.txt'
      
-     open(unit=11,file=archivo)
+     !open(unit=11,file=archivo)
+     archivo = 'output/' // trim(adjustl(volumen1)) // 'x' // trim(adjustl(volumen2)) // 'x' // &
+          trim(adjustl(volumen3)) // '_' // trim(adjustl(respuesta)) // '.txt'
+    open(unit=11,file=archivo)
+     
      do k=1,ancho
         do i=1,filas
            do j=1,columnas
@@ -237,7 +245,7 @@ end do
 !!!!!!!!!!!!!!!!!defino los bloques de paralelización!!!!!!!!!!!!!!!!!!!!!
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%&
 
-call omp_set_num_threads(4)               ! indicamos que deseamos usar hasta 4 hilos
+call omp_set_num_threads(12)               ! indicamos que deseamos usar hasta 4 hilos
 Nhilos     = omp_get_max_threads()
 
 tam_bloque = Q/(Nhilos*2)

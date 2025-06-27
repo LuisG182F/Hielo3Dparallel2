@@ -44,10 +44,10 @@ use Montecarlo
 implicit none
 
 ! Definir N como una constante
-integer, parameter :: N = 500
+integer, parameter :: N = 100
 
 ! Usar N para definir las dimensiones de las matrices
-integer, parameter :: filas = N, columnas = 10, ancho = N, stoptime = 1000000
+integer, parameter :: filas = N, columnas = 100, ancho = N, stoptime = 100
 character(len=60), parameter :: radio_fijo = 'n'
 
 
@@ -362,7 +362,7 @@ end do
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 !*******Encontrar  ii,jj,kk
-    call omp_set_num_threads(2)  ! Fijar a 4 hilos
+    call omp_set_num_threads(4)  ! Fijar a 4 hilos
     !iter es el indice que recorrerá vectR, que es mas amigable para paralelizar 
 !$omp parallel do    &
 !$omp   private(iter, ii, jj, kk, swap, ms, num)     &

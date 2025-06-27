@@ -1,81 +1,17 @@
 module hielonn
 
 use presicion
-
-!!!!!!!!!!!EXPERIMENTAL PARA USAR XOROSHIRO128!!!!!!!!!!!
-use omp_lib
-  integer, allocatable :: ISEED1(:), ISEED2(:)
-  integer :: num_threads
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+use xoroshiro128plus
 
  contains
 
+subroutine Rand0
+  call xoroshiro_auto_seed()
+end subroutine Rand0
 
-!****************************************************************
-!                         FUNCTION Rand0
-!
-!    Esta subrotine es para inicializar la función RandNew()
-!
-!****************************************************************
-
- subroutine Rand0()
-    implicit none
-    integer :: i, count
-    integer, dimension(33) :: seed
-    real(pr), dimension(2) :: r
-
-    call system_clock(count)
-    call random_seed()
-    call random_number(r)
-
-    num_threads = omp_get_max_threads()
-    allocate(ISEED1(num_threads), ISEED2(num_threads))
-
-    do i = 1, num_threads
-      seed = count + i * 17  ! Perturbamos la semilla
-      call random_seed(put=seed)
-      call random_number(r)
-      ISEED1(i) = idnint(r(1) * 2.0d0**31)
-      ISEED2(i) = idnint(r(2) * 2.0d0**31)
-    end do
-  end subroutine Rand0
-
-
-!******************************************************************
-!                         Function RandNew
-!    
-!
-!     This is an adapted version of Subroutine RANECU written by 
-!  F. JAMES (COMPUT. PHYS. COMMUN. 60 (1990) 329-344), which has 
-!  been modified to give a single Random number at each call.
-!  The 'SEEDS' ISEED1 AND ISEED2 must be initialized in the main 
-!  program by call the subroutine Rand0 and transferred through the 
-!  named COMMON BLOCK/RSEED/.
-!                            
-!******************************************************************
-   
-  real(pr) function RandNew()
-    implicit none
-    real(pr), parameter :: uscale = 1.0d0 / 2.0d0**31
-    integer :: i1, i2, iz
-    integer :: tid
-
-    tid = omp_get_thread_num() + 1  ! Fortran indexa desde 1
-
-    i1 = ISEED1(tid) / 53668
-    ISEED1(tid) = 40014 * (ISEED1(tid) - i1 * 53668) - i1 * 12211
-    if (ISEED1(tid) < 0) ISEED1(tid) = ISEED1(tid) + 2147483563
-
-    i2 = ISEED2(tid) / 52774
-    ISEED2(tid) = 40692 * (ISEED2(tid) - i2 * 52774) - i2 * 3791
-    if (ISEED2(tid) < 0) ISEED2(tid) = ISEED2(tid) + 2147483399
-
-    iz = ISEED1(tid) - ISEED2(tid)
-    if (iz < 1) iz = iz + 2147483562
-
-    RandNew = iz * uscale
-  end function RandNew
-
+real(pr) function RandNew()
+  RandNew = xoroshiro_rand()
+end function RandNew
 
 !  *********************************************************************
 !                Subroutine Timer0 (for ANSI FORTRAN 77)
@@ -839,7 +775,6 @@ character(100)                             :: archivo
 character(60)                              :: timew,conce
 character(100)                             :: directorio
 integer,dimension(filas,columnas,ancho)    :: c
-integer                                    :: jfl, jcl, jkl, jfr, jcr, jkr
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !
 !Generaci?n de los distribuci?n de tamano de granos y orientaci?n inicial

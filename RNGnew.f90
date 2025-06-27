@@ -18,7 +18,7 @@ contains
     integer(int64), intent(in) :: x
     integer, intent(in) :: k
     integer(int64) :: res
-    res = ior(ishft(x, k), ishft(x, k - 64))
+    res = ior(lshift(x, k), rshift(x, 64-k))
   end function rotl
 
   subroutine xoroshiro_seed(seed1, seed2)
@@ -56,11 +56,14 @@ call xoroshiro_seed(hash, hash * GOLDEN_RATIO_64 + 1_int64)
     integer(int64) :: r
     integer(int64) :: s0, s1
     s0 = s(1)
+    !print*, s0/(2**64)
     s1 = s(2)
+    !print*, s0/(2**64)
+
     r = s0 + s1
 
     s1 = ieor(s1, s0)
-    s(1) = ieor(rotl(s0, 55), ieor(s1, ishft(s1, 14)))
+    s(1) = ieor(rotl(s0, 55), ieor(s1, lshift(s1, 14)))
     s(2) = rotl(s1, 36)
   end function xoroshiro_next
 
@@ -68,7 +71,11 @@ call xoroshiro_seed(hash, hash * GOLDEN_RATIO_64 + 1_int64)
     real(real64) :: r
     integer(int64) :: x
     x = xoroshiro_next()
-    r = real(ior(ishft(x, -11), z'3FF0000000000000'), real64) - 1.0_real64
+    if (x < 0_int64) then
+    r = (real(x, real64) + 18446744073709551616.0_real64) / 18446744073709551616.0_real64
+else
+    r = real(x, real64) / 18446744073709551616.0_real64
+end if
   end function xoroshiro_rand
 
 end module xoroshiro128plus
