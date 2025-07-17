@@ -1,0 +1,60 @@
+module Gancho
+use, intrinsic :: iso_c_binding
+
+use cutensorex
+
+use cudafor
+
+    ! --- Memoria persistente en la GPU ---
+    real, device, allocatable, dimension(:,:,:) :: c_device
+    integer, parameter :: NUM_PERMUTACIONES = 64
+    integer, device, constant :: permutaciones_device(0:NUM_PERMUTACIONES-1, 0:7)
+
+
+contains
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+subroutine inicializar_gpu(c, filas, columnas, ancho, permutaciones_host)
+        real, dimension(:,:,:), intent(in) :: c
+        integer, value :: filas, columnas, ancho
+        integer, intent(in) :: permutaciones_host(0:NUM_PERMUTACIONES-1, 0:7)
+
+        allocate(c_device(filas, columnas, ancho))
+        c_device = c
+        permutaciones_device = permutaciones_host
+    end subroutine
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+subroutine ejecutar_montecarlo_en_gpu(c, filas, columnas, ancho, color, posicion_local_idx, time)
+    implicit none
+    
+    type(dim3) :: grid_dims, block_dims
+
+    ! Configurar y lanzar el kernel
+    block_dims = dim3(8, 8, 4)
+    grid_dims = dim3(ceiling(real(filas)/block_dims%x),  &
+                     ceiling(real(columnas)/block_dims%y), &
+                     ceiling(real(ancho)/block_dims%z))
+
+    !inicializar GPU
+    call Montecarlo_kernel<<<grid_dims, block_dims>>>(c_device,filas,columnas,ancho,radio_fijo,energy,BG_part0,BG_part1,BG_part2,color, posicion_local_idx, time) 
+    ! Sincronizar para asegurar que la GPU terminó
+    call cudaDeviceSynchronize()
+end subroutine
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+subroutine finalizar_gpu(c)
+        real, dimension(:,:,:), intent(out) :: c
+        !Devolver los resultados al CPU (host)
+        c = c_device
+        !Liberar memoria de la GPU
+        deallocate(c_device)
+end subroutine
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+end module
+

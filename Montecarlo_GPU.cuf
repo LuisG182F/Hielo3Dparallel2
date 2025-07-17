@@ -1,0 +1,636 @@
+module Montecarlo
+
+use Gancho
+
+use presicion
+
+use hielonn
+
+use cal_radio
+
+use precipitado1
+
+use radio0
+
+use radio1
+
+use radio2
+
+use cutensorex
+
+use cudafor
+
+use RNGgpu
+
+contains
+
+attributes(global) subroutine Montecarlo_kernel(c_device,filas,columnas,ancho,radio_fijo,energy,BG_part0,BG_part1,BG_part2,color, posicion_local_idx, time) 
+
+implicit none
+
+!pregunta si quieremos un radio de particula fija- radio_fijo = 'n' debemos poner ancho=9, radio_fijo = 's' hay que ver que tipo de particula vamos a generar!!!) 
+
+!ancho 5 para radio 0
+!ancho 7 para radio 1
+!ancho 9 para radio 2
+!efectos probailistico de las particulas_ fraccion de particulas moviles
+
+integer, value :: filas, columnas, ancho
+character(len=60)  :: radio_fijo 
+
+! Acceso a la tabla en memoria constante
+integer, parameter :: NUM_PERMUTACIONES = 64
+integer, device, constant :: permutaciones_device(0:NUM_PERMUTACIONES-1, 0:7)
+
+real(pr),parameter                      ::   pi=3.14159
+real(pr),parameter                      ::   casino0=0.005
+real(pr),parameter                      ::   casino1=0.005
+real(pr),parameter                      ::   casino2=0.005
+
+!factores relacionados con la funcion de energia de activacion y superficial
+real(pr),parameter                      ::   beta=1.0,ang_l=20.0
+!cuanto mas chico es beta menor es la influencia de la temperatura
+integer                                 ::   sip1,sip2,sip3,iii,jjj,kkk,i, BG_part0,BG_part1,BG_part2
+integer                                 ::   ii,jj,kk,sitioi,sitiof
+integer                                 ::   cont_radio
+integer                                 ::   jfl,jkl,jcl,jfr,jkr,jcr,volu
+!factores relacionados con la funcion de energia superficial y con la posibilidad de rotacion de los granos
+integer                                 ::   energy
+integer                                 ::   Q,e,mama,u
+integer                                 ::   mm,nn,ll,veci,bordei,bordef,centro,bordeCT
+integer                                 ::   matrix,tarzan,centro0,centro1,centro2,radius
+real(pr)                                ::   deltaGG,xx,ww,mini1,mini2
+real(pr)                                ::   Hi,difa,difa1,ruleta
+integer, allocatable                    ::   c_device(:,:,:)
+
+integer,dimension(10,10,10)             ::   c1,c2,c3
+
+integer,dimension(26)                   ::   vecinos
+real(pr),dimension(26)                  ::   Hff,deltaG
+real(pr)                                ::   casino
+
+!!!!!!!!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!             variables gpu
+!!!!!!!!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+integer, device :: c_device(:,:,:)
+
+integer, value :: color, posicion_local_idx, time
+
+integer :: ii, jj, kk
+
+integer :: mi_color, mi_posicion_local, pos_actual
+
+integer :: sc_x, sc_y, sc_z, num_sc_x, num_sc_y, supercube_id, fila_perm
+
+! Declaración de la semilla para este hilo
+    integer(C_LONG_LONG) :: mi_semilla
+    integer :: id_hilo_unico
+
+
+!Cada hilo calcula sus coordenadas (ii, jj, kk)
+ii = (blockidx%x - 1) * blockdim%x + threadidx%x
+jj = (blockidx%y - 1) * blockdim%y + threadidx%y
+kk = (blockidx%z - 1) * blockdim%z + threadidx%z
+
+if (ii > filas .or. jj > columnas .or. kk > ancho) return
+
+! --- INICIALIZACIÓN DE LA SEMILLA (una vez por hilo) ---
+    ! Crear un ID único para el hilo basado en sus coordenadas globales
+    id_hilo_unico = ii + (jj-1)*filas + (kk-1)*filas*columnas
+
+    ! Llamar a tu función para crear la semilla inicial
+    mi_semilla = inicializar_semilla_gpu(id_hilo_unico, blockidx%x, time)
+
+!inicializacion de variables
+veci=0
+bordect=0
+matrix=0
+centro=0
+bordei=0
+u=0 !no se si esta bien inicializarlo asi
+radius=0
+Q=filas*columnas*ancho
+casino=1
+
+    ! a) El color del super-cubo 2x2x2 al que pertenece el hilo
+    mi_color = mod((ii-1)/2, 2) + 2*mod((jj-1)/2, 2) + 4*mod((kk-1)/2, 2)
+
+    ! Solo trabajan los hilos del color correcto
+    if (mi_color == color) then
+
+        ! b) Calcular un ID único para este super-cubo
+        num_sc_x = ceiling(real(filas) / 2.0)
+        num_sc_y = ceiling(real(columnas) / 2.0)
+        sc_x = (ii - 1) / 2
+        sc_y = (jj - 1) / 2
+        sc_z = (kk - 1) / 2
+        supercube_id = sc_x + sc_y*num_sc_x + sc_z*num_sc_x*num_sc_y
+
+        ! c) Elegir una fila de la tabla de permutaciones basada en el ID
+        fila_perm = mod(supercube_id, NUM_PERMUTACIONES)
+
+        ! d) Obtener la posición local a procesar en este sub-paso
+        pos_actual = permutaciones_device(fila_perm, posicion_local_idx)
+
+        ! e) Posición relativa del hilo actual dentro de su super-cubo
+        mi_posicion_local = mod(ii-1, 2) + 2*mod(jj-1, 2) + 4*mod(kk-1, 2)
+
+        ! f) Si este hilo es el que debe actuar, ejecuta la lógica
+        if (mi_posicion_local == pos_actual) then            
+
+               !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    !           aqui empieza el modulo, tomando como dato ii,jj,kk,c_device
+               !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            sitioi=c_device(ii,jj,kk)
+            
+            
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!+
+!+                 Calculo de vecinos!!!!
+!+
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            
+    jfl = ii-1 ;  if (jfl < 1)        jfl = filas
+                 jcl = jj-1 ;  if (jcl < 1)        jcl = columnas
+                 jkl = kk-1 ;  if (jkl < 1)        jkl = ancho
+                 jfr = ii+1 ;  if (jfr > filas)    jfr = 1  
+                 jcr = jj+1 ;  if (jcr > columnas) jcr = 1
+                 jkr = kk+1 ;  if (jkr > ancho)    jkr = 1
+                 
+                 vecinos(1) = c_device(jfl, jcl,jkl)
+                 vecinos(2) = c_device(jfl, jj,jkl) 
+                 vecinos(3) = c_device(jfl, jcr,jkl)
+                 vecinos(4) = c_device(ii, jcl,jkl)
+                 vecinos(5) = c_device(ii, jcr,jkl)
+                 vecinos(6) = c_device(jfr, jcl,jkl)
+                 vecinos(7) = c_device(jfr, jj,jkl)
+                 vecinos(8) = c_device(jfr, jcr,jkl)
+                 
+                 vecinos(9) = c_device(jfl, jcl,kk)
+                 vecinos(10) = c_device(jfl, jj,kk)
+                 vecinos(11) = c_device(jfl, jcr,kk)
+                 vecinos(12) = c_device(ii, jcl,kk)
+                 vecinos(13) = c_device(ii, jcr,kk)
+                 vecinos(14) = c_device(jfr, jcl,kk)
+                 vecinos(15) = c_device(jfr, jj,kk)
+                 vecinos(16) = c_device(jfr, jcr,kk)
+                 
+                 vecinos(17) = c_device(jfl, jcl,jkr)
+                 vecinos(18) = c_device(jfl, jj,jkr)
+                 vecinos(19) = c_device(jfl, jcr,jkr)
+                 vecinos(20) = c_device(ii, jcl,jkr)
+                 vecinos(21) = c_device(ii, jcr,jkr)
+                 vecinos(22) = c_device(jfr, jcl,jkr)
+                 vecinos(23) = c_device(jfr, jj,jkr)
+                 vecinos(24) = c_device(jfr, jcr,jkr)
+                 
+                 vecinos(25) = c_device(ii, jj,jkl)
+                 vecinos(26) = c_device(ii, jj,jkr)        
+            
+        
+          
+                 
+!-------------------------------------------------------------
+!       El sitio de red es una particula con c_device(i,j,k)==0
+!-------------------------------------------------------------
+
+
+                 if (sitioi==0) then
+                 
+
+                                    
+!******************************************************************************************
+!                Centro Vet
+!
+!  Esta rutina calcula si la particula esta en el centro de la particula.
+!  Arroja una variable vet=1 si lo esta y vet=0 si no esta en el centro de la particula.
+!
+!******************************************************************************************
+                   
+                   
+!******************************************************************************************
+!                Borde vec
+!
+!  Esta rutina calcula si la particula esta en el borde de grano (BG).
+!  Arroja una variable vec=1 si esta en el BG y vec=0 si no esta en el BG.
+!
+!*****************************************************************************************
+
+!******************************************************************************************
+!                BordeCT vect
+!
+!  Esta rutina calcula si la particula esta en el borde de grano (BG).
+!  Arroja una variable vec=1 si esta en el BG y vec=0 si no esta en el BG.
+!
+!*****************************************************************************************
+
+!*****************************************************************************************
+!                Veci ve
+!
+!  Esta rutina calcula si la particula esta al lado de otra particula. 
+!  Arroja una variable ve=1 si lo esta y ve=0 si no lo esta.
+!
+!*****************************************************************************************
+
+!*****************************************************************************************
+!                MatrixM vecm
+!
+!  Esta rutina calcula si la particula esta dentro de la region de calculo. 
+!  Arroja una variable vecc=0 si lo esta y vecc=1 si no lo esta.
+!
+!*****************************************************************************************
+    
+   if (radio_fijo=='n') then
+
+   radius=8
+   centro0=radiopp0(c_device,ii,jj,kk,filas,columnas,ancho)
+   centro1=radiopp1(c_device,ii,jj,kk,filas,columnas,ancho)
+   centro2=radiopp2(c_device,ii,jj,kk,filas,columnas,ancho)
+      !print*, centro0, centro1, centro2
+   
+   if ((centro0==1)) radius=0
+   if ((centro0==0) .and. (centro1==1) .and. (centro2==2)) radius=1
+   if ((centro1==1) .and. (centro2==1) .and. (centro0==0)) radius=2
+   if ((radius/=0) .and. (radius/=1) .and. (radius/=2)) goto 145
+   else
+   end if
+   !print*,"el radio es", radius
+
+  
+   
+   
+                    Select case (radius)  
+                    
+                         case(0)
+                         
+                               bordei=Vec(c_device,ii,jj,kk,filas,columnas,ancho); 
+                               matrix=Vecm(radius,ii,jj,kk,filas,columnas,ancho);
+                               !centro=Vet(c_device,ii,jj,kk,filas,columnas,ancho)
+                               centro=1
+                                                                                        
+                                                                           
+                         case(1)
+                               
+                                
+                                bordei=Vec1(c_device,ii,jj,kk,filas,columnas,ancho); 
+                                matrix=Vecm1(radius,ii,jj,kk,filas,columnas,ancho);
+                                centro=Vet1(c_device,ii,jj,kk,filas,columnas,ancho)
+                                                     
+                            
+                         case(2)
+                               
+                                                             
+                               bordei=Vec2(c_device,ii,jj,kk,filas,columnas,ancho); 
+                                matrix=Vecm2(radius,ii,jj,kk,filas,columnas,ancho);
+                                centro=Vet2(c_device,ii,jj,kk,filas,columnas,ancho)                                
+                             
+                    end select
+                    !print*, bordei,matrix,centro
+
+                         if ((bordei==0) .or. (matrix==1) .or. (centro==0))  goto 145
+                        
+                        !particula no centrada o fuera de la region de calculo que no haga NADA            
+                        
+                        
+                        Select case (radius)  
+                    
+                         case(0)
+                                
+                          BG_part0=BG_part0+1
+                          casino=casino0
+                          
+                                                                             
+                        case(1)
+                          BG_part1=BG_part1+1
+                          casino=casino1
+                          
+                        case(2)
+                                
+                          BG_part2=BG_part2+1     
+                          casino=casino2    
+                    end select
+                        
+                        ruleta=RandNewGPU(mi_semilla)
+                         if (ruleta>casino) goto 145
+                         !print*, 'pase'
+                         
+                        tarzan=0
+                        23 e=int(RandNewGPU(mi_semilla)*26)+1
+                         
+                        tarzan=tarzan+1
+                        
+                        
+                        sitiof=vecinos(e)
+                                        
+                         
+                         Select case (e)
+                         case(1)
+                                iii=jfl; jjj=jcl;  kkk=jkl;  
+                         case(2)
+                                iii=jfl; jjj=jj;  kkk=jkl;    
+                         case(3)
+                                iii=jfl; jjj=jcr;  kkk=jkl;    
+                         case(4)
+                                iii=ii; jjj=jcl;  kkk=jkl;    
+                         case(5)
+                                iii=ii; jjj=jcr;  kkk=jkl;    
+                         case(6)
+                                iii=jfr; jjj=jcl;  kkk=jkl;    
+                         case(7)
+                                iii=jfr; jjj=jj;   kkk=jkl;    
+                         case(8)
+                                iii=jfr; jjj=jcr;  kkk=jkl;    
+                         case(9)
+                                iii=jfl; jjj=jcl; kkk=kk;     
+                         case(10)
+                                iii=jfl; jjj=jj;  kkk=kk;    
+                         case(11)
+                                iii=jfl; jjj=jcr; kkk=kk;     
+                         case(12)
+                                iii=ii;  jjj=jcl; kkk=kk;     
+                         case(13)
+                                iii=ii;  jjj=jcr; kkk=kk;     
+                         case(14)
+                                iii=jfr; jjj=jcl; kkk=kk;     
+                         case(15)
+                                iii=jfr; jjj=jj;  kkk=kk;     
+                         case(16)
+                                iii=jfr; jjj=jcr; kkk=kk;     
+                         case(17)
+                                iii=jfl; jjj=jcl; kkk=jkr;    
+                         case(18)
+                                iii=jfl; jjj=jj;  kkk=jkr;    
+                         case(19)
+                                iii=jfl; jjj=jcr; kkk=jkr;    
+                         case(20)
+                                iii=ii;  jjj=jcl; kkk=jkr;    
+                         case(21)
+                                iii=ii;  jjj=jcr; kkk=jkr;    
+                         case(22)
+                                iii=jfr; jjj=jcl; kkk=jkr;    
+                         case(23)
+                                iii=jfr; jjj=jj;  kkk=jkr;    
+                         case(24)
+                                iii=jfr; jjj=jcr; kkk=jkr;    
+                         case(25)
+                                iii=ii;  jjj=jj;  kkk=jkl;    
+                         case(26)
+                                iii=ii;  jjj=jj;  kkk=jkr;  
+                         end select
+                         
+
+                                         
+                     sip1=iii-ii
+                     sip2=jjj-jj
+                     sip3=kkk-kk
+                     
+                     
+             
+              
+!---------------------------------------------------------------------------------
+!
+!   Voy a mover la particula a la nueva posición
+!
+!---------------------------------------------------------------------------------
+
+
+                                         do mm=-radius,radius,1
+                                            do nn=-radius,radius,1
+                                               do ll=-radius,radius,1
+                                               
+                                                 c2(3+mm,3+nn,3+ll)=c_device(iii+mm,jjj+nn,kkk+ll)
+                                                 !Print*, iii+mm,jjj+nn,kkk+ll
+                                               end do
+                                            end do
+                                         end do
+
+                                        do mm=-radius,radius,1
+                                            do nn=-radius,radius,1
+                                               do ll=-radius,radius,1
+                                                        c1(3+mm,3+nn,3+ll)=c_device(ii+mm,jj+nn,kk+ll)
+                                                        c3(3+mm,3+nn,3+ll)=c_device(ii-sip1+mm,jj-sip2+nn,kk-sip3+ll)
+                                                        !Print*, ii-sip1+mm,jj-sip2+nn,kk-sip3+ll
+                                                end do
+                                            end do
+                                        end do
+                                   
+                                        do mm=-radius,radius,1
+                                            do nn=-radius,radius,1
+                                                do ll=-radius,radius,1
+                                                    c_device(ii+mm,jj+nn,kk+ll)=c3(3+mm,3+nn,3+ll)
+                                                    !Print*, ii+mm,jj+nn,kk+ll
+                                                end do
+                                            end do
+                                        end do
+                                        
+                                        do mm=-radius,radius,1
+                                            do nn=-radius,radius,1
+                                                do ll=-radius,radius,1
+                                                    c_device(iii+mm,jjj+nn,kkk+ll)=c1(3+mm,3+nn,3+ll)
+                                                end do
+                                            end do
+                                        end do
+
+                    Select case (radius)  
+                    
+                         case(0)
+                                
+                                veci=Ve(c_device,iii,jjj,kkk,filas,columnas,ancho);
+                                matrix=Vecm(radius,iii,jjj,kkk,filas,columnas,ancho);
+                                bordeCT=Vect0(c_device,iii,jjj,kkk,filas,columnas,ancho);
+                                                                             
+                         case(1)
+                                
+                                
+                                veci=Ve1(c_device,iii,jjj,kkk,filas,columnas,ancho);
+                                bordef=Vec1(c_device,iii,jjj,kkk,filas,columnas,ancho); 
+                                matrix=Vecm1(radius,iii,jjj,kkk,filas,columnas,ancho);
+                                bordeCT=Vect1(c_device,iii,jjj,kkk,filas,columnas,ancho);
+                            
+                         case(2)
+                                
+                                
+                                veci=Ve2(c_device,iii,jjj,kkk,filas,columnas,ancho);
+                                bordef=Vec2(c_device,iii,jjj,kkk,filas,columnas,ancho); 
+                                matrix=Vecm2(radius,iii,jjj,kkk,filas,columnas,ancho);
+                                bordeCT=Vect2(c_device,iii,jjj,kkk,filas,columnas,ancho);
+                              
+                    end select
+                    
+                                  
+                                  if ((veci==1) .or.  (matrix==1) .or. (bordeCT==0)) then
+                                  !tiene particulas al lado, esta fuera de la zona de callculo y la particula se descentro del BG
+                                  
+                                  
+                                  
+                                        do mm=-radius,radius,1
+                                            do nn=-radius,radius,1
+                                                do ll=-radius,radius,1
+                                                    c_device(iii+mm,jjj+nn,kkk+ll)=c2(3+mm,3+nn,3+ll)
+                                                end do
+                                            end do
+                                        end do
+                                        
+                                        do mm=-radius,radius,1
+                                            do nn=-radius,radius,1
+                                                do ll=-radius,radius,1
+                                                    c_device(ii+mm,jj+nn,kk+ll)=c1(3+mm,3+nn,3+ll)
+                                                end do
+                                            end do
+                                        end do
+                                        
+                                        if (tarzan<=200) then
+                                        !tarzan=tarzan+1
+                                        !print*,tarzan
+                                            goto 23
+                                            
+                                        else
+                                        
+                                        goto 145
+                                        end if
+                            else 
+                                   goto 145
+                                   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                !%%%%%%%REVISAR como enganchar esto con mi vectR!!!!!!%%%%%%%%%%%%    
+                                   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+                            !pastor= jjj + ( iii-1 ) * columnas + ( kkk-1 ) * ( filas*columnas )
+                                        
+                                        !do u1=1,Q
+                                        !if (vect(u1)==pastor) w=u1
+                                        !end do
+                                        !swap=vect(w)                
+                          
+                            
+                            
+                                     end if
+            
+                
+                 else
+                 
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!   El sitio de red es un atomo de cristal
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     
+   
+  
+
+   
+   
+  !do mm=1,26 
+  !       if (vecinos(mm)==0) goto 145   
+  !end do    
+
+volu=par(c_device,ii,jj,kk,filas,columnas,ancho);
+if (volu==26) goto 145   
+
+  
+            
+            
+                 Hi=0
+                   do i=1,26
+                     difa=abs((Vecinos(i)-sitioi)*90.0/Q)
+                        if ((Vecinos(i)/=0) .and. (difa/=0)) then
+                        Hi=Hi+Lif(difa,energy,ang_l)
+                        else
+                        end if
+                 end do
+
+                 
+!*****************************Cristal puro anisotropico ***********************************************
+
+   if (energy/=3) then
+                
+                mini1=200
+                
+                do e=1,26
+                 
+                 sitiof=vecinos(e)
+                 mama=vecinos(e)
+                 vecinos(e)=sitioi
+                   
+                    Hff(e)=0
+                  
+                  do i=1,26
+                    difa=abs((vecinos(i)-sitiof)*90.0/Q)
+                    Hff(e)=Hff(e)+Lif(difa,energy,ang_l)
+                  end do
+                   
+                   deltaG(e)=Hff(e)-Hi
+                   
+                   if (deltaG(e)/=0) then
+                   
+                   mini2=deltaG(e)
+                   if (mini2<mini1)   then 
+                   mini1=mini2
+                   u=e    
+                   else
+                   end if
+                   
+                   else
+                   end if
+                   
+                   
+                   vecinos(e)=mama
+                 end do
+                                         
+                sitiof=vecinos(u)
+                deltaGG=mini1
+                                                
+!&&&&&&&&&&&& Cristal puro uniforme &&&&&&&&&&&&&&&
+
+    else
+                                                e=int(RandNewGPU(mi_semilla)*26)+1
+                                                sitiof=vecinos(e)
+                                                    if ((sitioi==sitiof) .or. (sitiof==0)) then 
+                                                        goto 145
+                                                    else
+                                                    end if                                    
+                                                Hff(e)=0
+                                                    do i=1,26
+                                                        difa=abs((vecinos(i)-sitiof)*90.0/Q)
+                                                            if ((sitiof/=0) .and. (difa/=0) ) then 
+                                                                Hff(e)=Hff(e)+Lif(difa,energy,ang_l)
+                                                            else
+                                                            end if
+                                                        deltaGG=Hff(e)-Hi
+                                                    end do
+    end if
+
+!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!   Calculo de la variacion del hamiltoneano    !!!!aqui se cambia c_device(i,j,k)!!!!
+!_____________________________________________!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+difa=abs((sitioi-sitiof)*90.0/Q) 
+difa1=Lif(difa,energy,ang_l)
+
+    if (deltaGG<=0) then 
+    
+    c_device(ii,jj,kk)=sitiof
+    else
+    ww=0
+    if (difa1/=0) ww=(exp(-deltaGG/beta/difa1))*difa1
+    xx=RandNewGPU(mi_semilla)
+        if (xx<ww) then
+        
+        c_device(ii,jj,kk)=sitiof
+        else 
+        c_device(ii,jj,kk)=sitioi
+        end if
+    end if
+  end if
+
+
+145 continue
+
+end if
+
+end subroutine Montecarlo_kernel
+
+end module
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!           aqui termina el calculo de montecarlo
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
