@@ -1,0 +1,85 @@
+module precipitado1GPU
+
+use presicion
+
+use radio0
+
+use radio1
+
+use radio2
+
+use hielonn
+
+ contains
+
+
+!*********************************************************************
+!                Function sitio (FORTRAN)
+!
+!  Esta rutina calcula si el sitio esta dentro de un grano 
+!  Arroja una variable par1=1 si esta  y par1=0 si no esta .
+!
+!*********************************************************************
+
+attributes(device) Integer function par(c_device, ii, jj, kk, filas, columnas, ancho) result(par_val)
+IMPLICIT NONE  
+integer, device :: c_device(:,:,:)
+    integer, value :: ii, jj, kk, filas, columnas, ancho
+    integer :: jfl, jfr, jcl, jcr, jkl, jkr, s, peruca
+    integer, dimension(26) :: vvecinos
+
+par_val=0
+                 jfl = ii-1 ;  if (jfl < 1)        jfl = filas
+                 jcl = jj-1 ;  if (jcl < 1)        jcl = columnas
+                 jkl = kk-1 ;  if (jkl < 1)        jkl = ancho
+                 jfr = ii+1 ;  if (jfr > filas)    jfr = 1  
+                 jcr = jj+1 ;  if (jcr > columnas) jcr = 1
+                 jkr = kk+1 ;  if (jkr > ancho)    jkr = 1
+                 
+                 Vvecinos(1) = c_device(jfl, jcl,jkl)
+                 Vvecinos(2) = c_device(jfl, jj,jkl) 
+                 Vvecinos(3) = c_device(jfl, jcr,jkl)
+                 Vvecinos(4) = c_device(ii, jcl,jkl)
+                 Vvecinos(5) = c_device(ii, jcr,jkl)
+                 Vvecinos(6) = c_device(jfr, jcl,jkl)
+                 Vvecinos(7) = c_device(jfr, jj,jkl)
+                 Vvecinos(8) = c_device(jfr, jcr,jkl)
+                 
+                 Vvecinos(9) = c_device(jfl, jcl,kk)
+                 Vvecinos(10) = c_device(jfl, jj,kk)
+                 Vvecinos(11) = c_device(jfl, jcr,kk)
+                 Vvecinos(12) = c_device(ii, jcl,kk)
+                 Vvecinos(13) = c_device(ii, jcr,kk)
+                 Vvecinos(14) = c_device(jfr, jcl,kk)
+                 Vvecinos(15) = c_device(jfr, jj,kk)
+                 Vvecinos(16) = c_device(jfr, jcr,kk)
+                 
+                 Vvecinos(17) = c_device(jfl, jcl,jkr)
+                 Vvecinos(18) = c_device(jfl, jj,jkr)
+                 Vvecinos(19) = c_device(jfl, jcr,jkr)
+                 Vvecinos(20) = c_device(ii, jcl,jkr)
+                 Vvecinos(21) = c_device(ii, jcr,jkr)
+                 Vvecinos(22) = c_device(jfr, jcl,jkr)
+                 Vvecinos(23) = c_device(jfr, jj,jkr)
+                 Vvecinos(24) = c_device(jfr, jcr,jkr)
+                 
+                 Vvecinos(25) = c_device(ii, jj,jkl)
+                 Vvecinos(26) = c_device(ii, jj,jkr)
+       
+
+
+
+do s=1,26
+if (vvecinos(s)/=0) peruca=vvecinos(s)
+end do 
+
+do s=1,26
+if (vvecinos(s)==c_device(ii,jj,kk)) par_val=par_val+1
+end do 
+
+
+end function
+
+end module precipitado1GPU
+
+

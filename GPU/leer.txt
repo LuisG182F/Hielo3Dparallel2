@@ -1,0 +1,3 @@
+directrio con programa 3D de policristal con un solo tama�o de particula a elecci�n
+
+esta carpeta contiene una version de la simulacion que esta paralelizada en gpu con CUDA Fortran, usando el compilador nvfortran

@@ -1,0 +1,96 @@
+module Gancho
+use, intrinsic :: iso_c_binding
+use Montecarlo
+use cudafor
+implicit none
+
+    ! --- Memoria persistente en la GPU ---
+    integer, device, allocatable  :: c_device(:,:,:)
+    integer, device, allocatable, target :: permutaciones_device(:,:)
+
+     ! ++ AÑADE ESTAS LÍNEAS PARA LOS CONTADORES EN LA GPU ++
+    integer, device, allocatable :: BG_part0_dev, BG_part1_dev, BG_part2_dev
+
+
+contains
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+subroutine inicializar_gpu(c, filas, columnas, ancho, permutaciones_host,BG_part0, BG_part1, BG_part2)
+        integer, dimension(:,:,:), intent(in) :: c
+        integer, value :: filas, columnas, ancho
+        integer :: BG_part0, BG_part1, BG_part2
+        integer, intent(in) :: permutaciones_host(0:, 0:) ! Usar dos puntos para tamaño asumido
+
+        allocate(c_device(filas, columnas, ancho))
+        allocate(permutaciones_device(size(permutaciones_host, 1), size(permutaciones_host, 2)))
+        allocate(BG_part0_dev, BG_part1_dev, BG_part2_dev)
+
+        c_device = c
+        permutaciones_device = permutaciones_host
+        BG_part0_dev=BG_part0
+        BG_part1_dev=BG_part1
+        BG_part2_dev=BG_part2
+    end subroutine
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+subroutine ejecutar_paso_montecarlo(filas, columnas, ancho, energy, color, posicion_local_idx, time, num_perms, num_pos)
+    implicit none
+    integer, value :: filas, columnas, ancho, color, posicion_local_idx, time, energy
+    integer, value :: num_perms, num_pos 
+    integer :: ierr
+    type(dim3) :: grid_dims, block_dims
+
+    ! Configurar y lanzar el kernel
+    block_dims = dim3(8, 8, 4)
+    grid_dims = dim3(ceiling(real(filas)/block_dims%x),  &
+                     ceiling(real(columnas)/block_dims%y), &
+                     ceiling(real(ancho)/block_dims%z))
+
+    ! Lanzar kernel directamente con los arrays device
+    call Montecarlo_kernel<<<grid_dims, block_dims>>>(c_device, filas, columnas, ancho, energy, &
+                                                     BG_part0_dev, BG_part1_dev, BG_part2_dev, &
+                                                     color, posicion_local_idx, time, &
+                                                     permutaciones_device, num_perms, num_pos)
+    ierr = cudaDeviceSynchronize()
+end subroutine
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+subroutine finalizar_gpu(c, BG_part0, BG_part1, BG_part2, time, paso, paso_area, paso_luz)
+        integer, dimension(:,:,:), intent(out) :: c
+        integer, intent(out) :: BG_part0, BG_part1, BG_part2
+        integer, intent(in) :: paso, paso_area, paso_luz, time
+
+
+    !Devolver los resultados al CPU (host) solo en los pasos necesarios
+    
+    if (((mod(time, paso) == 0) .and. (time /= 0)) .or. &
+    (mod(time, paso_area) == 0) .or. &
+    (mod(time, paso_luz) == 0)) then
+
+        c = c_device
+        BG_part0=BG_part0_dev
+        BG_part1=BG_part1_dev
+        BG_part2=BG_part2_dev
+        
+    end if
+
+        BG_part0_dev=0
+        BG_part1_dev=0
+        BG_part2_dev=0
+
+end subroutine
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+subroutine Fin_gpu()
+        !Liberar memoria de la GPU
+        deallocate(c_device)
+        deallocate(permutaciones_device)
+        deallocate(BG_part0_dev, BG_part1_dev, BG_part2_dev) 
+end subroutine
+
+end module
+

@@ -1,0 +1,1554 @@
+module radio2
+
+use presicion
+
+ contains
+!*********************************************************************
+!                Function bordeCT (FORTRAN) ACTUALIZADO GPU
+!
+!  Esta rutina calcula si la particula esta en el borde de grano (BG) y centrada 
+!  Arroja una variable vec1=1 si esta en el BG y centrada y vec1=0 si no esta en el BG centrada.
+!
+!*********************************************************************
+
+attributes(device) Integer function Vect2(c_device, ii, jj, kk, filas, columnas, ancho) result(vect2_val)
+IMPLICIT NONE  
+integer, device :: c_device(:,:,:)
+    integer, value :: ii, jj, kk, filas, columnas, ancho
+    integer :: numero_gauss1, numero_gauss2, rrrr, rrrrr
+    integer :: jfl, jfr, jcl, jcr, jkl, jkr
+    integer :: mfl, mfr, mcl, mcr, mkl, mkr
+    integer :: sfl, sfr, scl, scr, skl, skr
+    integer :: s
+    integer, dimension(218) :: vvecinos
+
+vect2_val=0
+
+jfl = ii-1 ;  if (jfl < 1)        jfl = filas
+ jcl = jj-1 ;  if (jcl < 1)        jcl = columnas
+ jkl = kk-1 ;  if (jkl < 1)        jkl = ancho
+ 
+ jfr = ii+1 ;  if (jfr > filas)    jfr = 1
+ jcr = jj+1 ;  if (jcr > columnas) jcr = 1
+ jkr = kk+1 ;  if (jkr > ancho)    jkr = 1
+
+
+ mfl=ii-2
+ if (mfl==-1) then 
+ mfl = filas-1
+ else
+ if (mfl==0) then
+ mfl = filas
+ end if
+ end if
+
+ 
+mcl=jj-2
+ if (mcl==-1) then 
+ mcl = columnas-1
+ else
+ if (mcl==0) then
+ mcl = columnas
+ end if
+ end if
+
+ mkl=kk-2
+ if (mkl==-1) then 
+ mkl = ancho-1
+ else
+ if (mkl==0) then
+ mkl = ancho
+ end if
+ end if
+ 
+ mfr=ii+2
+ if (mfr==filas+2) then 
+ mfr = 2
+ else
+ if (mfr==filas+1) then
+ mfr = 1
+ end if
+ end if
+ 
+ mcr=jj+2
+ if (mcr==columnas+2) then 
+ mcr = 2
+ else
+ if (mcr==columnas+1) then
+ mcr = 1
+ end if
+ end if
+
+ 
+ mkr=kk+2
+ if (mkr==ancho+2) then 
+ mkr = 2
+ else
+ if (mkr==ancho+1) then
+ mkr = 1
+ end if
+ end if
+
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+sfl=ii-3
+ if (sfl==-2) then 
+ sfl = filas-2
+ else
+ if (sfl==0) then
+ sfl = filas
+ end if
+ end if
+
+ 
+scl=jj-3
+ if (scl==-2) then 
+ scl = columnas-2
+ else
+ if (scl==0) then
+ scl = columnas
+ end if
+ end if
+
+ skl=kk-3
+ if (skl==-2) then 
+ skl = ancho-2
+ else
+ if (skl==0) then
+ skl = ancho
+ end if
+ end if
+ 
+ sfr=ii+3
+ if (sfr==filas+3) then 
+ sfr = 3
+ else
+ if (sfr==filas+2) then
+ sfr = 2
+ end if
+ end if
+ 
+ scr=jj+3
+ if (scr==columnas+3) then 
+ scr = 3
+ else
+ if (scr==columnas+2) then
+ scr = 2
+ end if
+ end if
+
+ 
+ skr=kk+3
+ if (skr==ancho+3) then 
+ skr = 3
+ else
+ if (skr==ancho+2) then
+ skr = 2
+ end if
+ end if
+
+
+!********anillo 1**********************
+ vvecinos(1) = c_device(sfl, scr,mkr)
+ vvecinos(2) = c_device(sfl, mcr,mkr)
+ vvecinos(3) = c_device(sfl, jcr,mkr)
+ vvecinos(4) = c_device(sfl, jj,mkr)
+ vvecinos(5) = c_device(sfl, jcl,mkr)
+ vvecinos(6) = c_device(sfl, mcl,mkr)
+ vvecinos(7) = c_device(sfl, scl,mkr)
+ 
+ vvecinos(8) = c_device(sfr, scr,mkr)
+ vvecinos(9) = c_device(sfr, mcr,mkr)
+ vvecinos(10) = c_device(sfr, jcr,mkr)
+ vvecinos(11) = c_device(sfr, jj,mkr)
+ vvecinos(12) = c_device(sfr, jcl,mkr)
+ vvecinos(13) = c_device(sfr, mcl,mkr)
+ vvecinos(14) = c_device(sfr, scl,mkr)
+ 
+ vvecinos(15) = c_device(mfl,scr,mkr)
+ vvecinos(16) = c_device(jfl,scr,mkr)
+ vvecinos(17) = c_device(ii,scr,mkr)
+ vvecinos(18) = c_device(jfr,scr,mkr)
+ vvecinos(19) = c_device(mfl,scr,mkr)
+ 
+ vvecinos(20) = c_device(mfl,scl,mkr)
+ vvecinos(21) = c_device(jfl,scl,mkr)
+ vvecinos(22) = c_device(ii,scl,mkr)
+ vvecinos(23) = c_device(jfr,scl,mkr)
+ vvecinos(24) = c_device(mfl,scl,mkr)
+
+ !********anillo 2**********************
+ 
+ vvecinos(25) = c_device(sfl, scr,jkr)
+ vvecinos(26) = c_device(sfl, mcr,jkr)
+ vvecinos(27) = c_device(sfl, jcr,jkr)
+ vvecinos(28) = c_device(sfl, jj,jkr)
+ vvecinos(29) = c_device(sfl, jcl,jkr)
+ vvecinos(30) = c_device(sfl, mcl,jkr)
+ vvecinos(31) = c_device(sfl, scl,jkr)
+ 
+ vvecinos(32) = c_device(sfr, scr,jkr)
+ vvecinos(33) = c_device(sfr, mcr,jkr)
+ vvecinos(34) = c_device(sfr, jcr,jkr)
+ vvecinos(35) = c_device(sfr, jj,jkr)
+ vvecinos(36) = c_device(sfr, jcl,jkr)
+ vvecinos(37) = c_device(sfr, mcl,jkr)
+ vvecinos(38) = c_device(sfr, scl,jkr)
+ 
+ vvecinos(39) = c_device(mfl,scr,jkr)
+ vvecinos(40) = c_device(jfl,scr,jkr)
+ vvecinos(41) = c_device(ii,scr,jkr)
+ vvecinos(42) = c_device(jfr,scr,jkr)
+ vvecinos(43) = c_device(mfl,scr,jkr)
+ 
+ vvecinos(44) = c_device(mfl,scl,jkr)
+ vvecinos(45) = c_device(jfl,scl,jkr)
+ vvecinos(46) = c_device(ii,scl,jkr)
+ vvecinos(47) = c_device(jfr,scl,jkr)
+ vvecinos(48) = c_device(mfl,scl,jkr)
+ 
+!********anillo 3**********************
+
+ vvecinos(49) = c_device(sfl, scr,kk)
+ vvecinos(50) = c_device(sfl, mcr,kk)
+ vvecinos(51) = c_device(sfl, jcr,kk)
+ vvecinos(52) = c_device(sfl, jj,kk)
+ vvecinos(53) = c_device(sfl, jcl,kk)
+ vvecinos(54) = c_device(sfl, mcl,kk)
+ vvecinos(55) = c_device(sfl, scl,kk)
+ 
+ vvecinos(56) = c_device(sfr, scr,kk)
+ vvecinos(57) = c_device(sfr, mcr,kk)
+ vvecinos(58) = c_device(sfr, jcr,kk)
+ vvecinos(59) = c_device(sfr, jj,kk)
+ vvecinos(60) = c_device(sfr, jcl,kk)
+ vvecinos(61) = c_device(sfr, mcl,kk)
+ vvecinos(62) = c_device(sfr, scl,kk)
+ 
+ vvecinos(63) = c_device(mfl,scr,kk)
+ vvecinos(64) = c_device(jfl,scr,kk)
+ vvecinos(65) = c_device(ii,scr,kk)
+ vvecinos(66) = c_device(jfr,scr,kk)
+ vvecinos(67) = c_device(mfl,scr,kk)
+ 
+ vvecinos(68) = c_device(mfl,scl,kk)
+ vvecinos(69) = c_device(jfl,scl,kk)
+ vvecinos(70) = c_device(ii,scl,kk)
+ vvecinos(71) = c_device(jfr,scl,kk)
+ vvecinos(72) = c_device(mfl,scl,kk)
+ 	 
+!********anillo 4**********************
+ vvecinos(73) = c_device(sfl, scr,jkl)
+ vvecinos(74) = c_device(sfl, mcr,jkl)
+ vvecinos(75) = c_device(sfl, jcr,jkl)
+ vvecinos(76) = c_device(sfl, jj,jkl)
+ vvecinos(77) = c_device(sfl, jcl,jkl)
+ vvecinos(78) = c_device(sfl, mcl,jkl)
+ vvecinos(79) = c_device(sfl, scl,jkl)
+ 
+ vvecinos(80) = c_device(sfr, scr,jkl)
+ vvecinos(81) = c_device(sfr, mcr,jkl)
+ vvecinos(82) = c_device(sfr, jcr,jkl)
+ vvecinos(83) = c_device(sfr, jj,jkl)
+ vvecinos(84) = c_device(sfr, jcl,jkl)
+ vvecinos(85) = c_device(sfr, mcl,jkl)
+ vvecinos(86) = c_device(sfr, scl,jkl)
+ 
+ vvecinos(87) = c_device(mfl,scr,jkl)
+ vvecinos(88) = c_device(jfl,scr,jkl)
+ vvecinos(89) = c_device(ii,scr,jkl)
+ vvecinos(90) = c_device(jfr,scr,jkl)
+ vvecinos(91) = c_device(mfl,scr,jkl)
+ 
+ vvecinos(92) = c_device(mfl,scl,jkl)
+ vvecinos(93) = c_device(jfl,scl,jkl)
+ vvecinos(94) = c_device(ii,scl,jkl)
+ vvecinos(95) = c_device(jfr,scl,jkl)
+ vvecinos(96) = c_device(mfl,scl,jkl)
+ 
+ !********anillo 5**********************
+ vvecinos(97) = c_device(sfl, scr,mkl)
+ vvecinos(98) = c_device(sfl, mcr,mkl)
+ vvecinos(99) = c_device(sfl, jcr,mkl)
+ vvecinos(100) = c_device(sfl, jj,mkl)
+ vvecinos(101) = c_device(sfl, jcl,mkl)
+ vvecinos(102) = c_device(sfl, mcl,mkl)
+ vvecinos(103) = c_device(sfl, scl,mkl)
+ 
+ vvecinos(104) = c_device(sfr, scr,mkl)
+ vvecinos(105) = c_device(sfr, mcr,mkl)
+ vvecinos(106) = c_device(sfr, jcr,mkl)
+ vvecinos(107) = c_device(sfr, jj,mkl)
+ vvecinos(108) = c_device(sfr, jcl,mkl)
+ vvecinos(109) = c_device(sfr, mcl,mkl)
+ vvecinos(110) = c_device(sfr, scl,mkl)
+ 
+ vvecinos(111) = c_device(mfl,scr,mkl)
+ vvecinos(112) = c_device(jfl,scr,mkl)
+ vvecinos(113) = c_device(ii,scr,mkl)
+ vvecinos(114) = c_device(jfr,scr,mkl)
+ vvecinos(115) = c_device(mfl,scr,mkl)
+ 
+ vvecinos(116) = c_device(mfl,scl,mkl)
+ vvecinos(117) = c_device(jfl,scl,mkl)
+ vvecinos(118) = c_device(ii,scl,mkl)
+ vvecinos(119) = c_device(jfr,scl,mkl)
+ vvecinos(120) = c_device(mfl,scl,mkl)
+ 
+!************tapa1*******************
+
+ vvecinos(121) = c_device(sfl, scr,skl)
+ vvecinos(122) = c_device(sfl, mcr,skl)
+ vvecinos(123) = c_device(sfl, jcr,skl)
+ vvecinos(124) = c_device(sfl, jj,skl)
+ vvecinos(125) = c_device(sfl, jcl,skl)
+ vvecinos(126) = c_device(sfl, mcl,skl)
+ vvecinos(127) = c_device(sfl, scl,skl)
+ 
+ vvecinos(128) = c_device(mfl, scr,skl)
+ vvecinos(129) = c_device(mfl, mcr,skl)
+ vvecinos(130) = c_device(mfl, jcr,skl)
+ vvecinos(131) = c_device(mfl, jj,skl)
+ vvecinos(132) = c_device(mfl, jcl,skl)
+ vvecinos(133) = c_device(mfl, mcl,skl)
+ vvecinos(134) = c_device(mfl, scl,skl)
+ 
+ vvecinos(135) = c_device(jfl, scr,skl)
+ vvecinos(136) = c_device(jfl, mcr,skl)
+ vvecinos(137) = c_device(jfl, jcr,skl)
+ vvecinos(138) = c_device(jfl, jj,skl)
+ vvecinos(139) = c_device(jfl, jcl,skl)
+ vvecinos(140) = c_device(jfl, mcl,skl)
+ vvecinos(141) = c_device(jfl, scl,skl)
+ 
+ vvecinos(142) = c_device(ii, scr,skl)
+ vvecinos(143) = c_device(ii, mcr,skl)
+ vvecinos(144) = c_device(ii, jcr,skl)
+ vvecinos(145) = c_device(ii, jj,skl)
+ vvecinos(146) = c_device(ii, jcl,skl)
+ vvecinos(147) = c_device(ii, mcl,skl)
+ vvecinos(148) = c_device(ii, scl,skl)
+ 
+ vvecinos(149) = c_device(jfr, scr,skl)
+ vvecinos(150) = c_device(jfr, mcr,skl)
+ vvecinos(151) = c_device(jfr, jcr,skl)
+ vvecinos(152) = c_device(jfr, jj,skl)
+ vvecinos(153) = c_device(jfr, jcl,skl)
+ vvecinos(154) = c_device(jfr, mcl,skl)
+ vvecinos(155) = c_device(jfr, scl,skl)
+ 
+ vvecinos(156) = c_device(mfr, scr,skl)
+ vvecinos(157) = c_device(mfr, mcr,skl)
+ vvecinos(158) = c_device(mfr, jcr,skl)
+ vvecinos(159) = c_device(mfr, jj,skl)
+ vvecinos(160) = c_device(mfr, jcl,skl)
+ vvecinos(161) = c_device(mfr, mcl,skl)
+ vvecinos(162) = c_device(mfr, scl,skl)
+ 
+ vvecinos(163) = c_device(sfr, scr,skl)
+ vvecinos(164) = c_device(sfr, mcr,skl)
+ vvecinos(165) = c_device(sfr, jcr,skl)
+ vvecinos(166) = c_device(sfr, jj,skl)
+ vvecinos(167) = c_device(sfr, jcl,skl)
+ vvecinos(168) = c_device(sfr, mcl,skl)
+ vvecinos(169) = c_device(sfr, scl,skl)
+ 
+! ************tapa2*******************
+
+ vvecinos(170) = c_device(sfl, scr,skr)
+ vvecinos(171) = c_device(sfl, mcr,skr)
+ vvecinos(172) = c_device(sfl, jcr,skr)
+ vvecinos(173) = c_device(sfl, jj,skr)
+ vvecinos(174) = c_device(sfl, jcl,skr)
+ vvecinos(175) = c_device(sfl, mcl,skr)
+ vvecinos(176) = c_device(sfl, scl,skr)
+ 
+ vvecinos(177) = c_device(mfl, scr,skr)
+ vvecinos(178) = c_device(mfl, mcr,skr)
+ vvecinos(179) = c_device(mfl, jcr,skr)
+ vvecinos(180) = c_device(mfl, jj,skr)
+ vvecinos(181) = c_device(mfl, jcl,skr)
+ vvecinos(182) = c_device(mfl, mcl,skr)
+ vvecinos(183) = c_device(mfl, scl,skr)
+ 
+ vvecinos(184) = c_device(jfl, scr,skr)
+ vvecinos(185) = c_device(jfl, mcr,skr)
+ vvecinos(186) = c_device(jfl, jcr,skr)
+ vvecinos(187) = c_device(jfl, jj,skr)
+ vvecinos(188) = c_device(jfl, jcl,skr)
+ vvecinos(189) = c_device(jfl, mcl,skr)
+ vvecinos(190) = c_device(jfl, scl,skr)
+ 
+ vvecinos(191) = c_device(ii, scr,skr)
+ vvecinos(192) = c_device(ii, mcr,skr)
+ vvecinos(193) = c_device(ii, jcr,skr)
+ vvecinos(194) = c_device(ii, jj,skr)
+ vvecinos(195) = c_device(ii, jcl,skr)
+ vvecinos(196) = c_device(ii, mcl,skr)
+ vvecinos(197) = c_device(ii, scl,skr)
+ 
+ vvecinos(198) = c_device(jfr, scr,skr)
+ vvecinos(199) = c_device(jfr, mcr,skr)
+ vvecinos(200) = c_device(jfr, jcr,skr)
+ vvecinos(201) = c_device(jfr, jj,skr)
+ vvecinos(202) = c_device(jfr, jcl,skr)
+ vvecinos(203) = c_device(jfr, mcl,skr)
+ vvecinos(204) = c_device(jfr, scl,skr)
+ 
+ vvecinos(205) = c_device(mfr, scr,skr)
+ vvecinos(206) = c_device(mfr, mcr,skr)
+ vvecinos(207) = c_device(mfr, jcr,skr)
+ vvecinos(208) = c_device(mfr, jj,skr)
+ vvecinos(209) = c_device(mfr, jcl,skr)
+ vvecinos(210) = c_device(mfr, mcl,skr)
+ vvecinos(211) = c_device(mfr, scl,skr)
+ 
+ vvecinos(212) = c_device(sfr, scr,skr)
+ vvecinos(213) = c_device(sfr, mcr,skr)
+ vvecinos(214) = c_device(sfr, jcr,skr)
+ vvecinos(215) = c_device(sfr, jj,skr)
+ vvecinos(216) = c_device(sfr, jcl,skr)
+ vvecinos(217) = c_device(sfr, mcl,skr)
+ vvecinos(218) = c_device(sfr, scl,skr)
+
+ 	  
+
+
+numero_gauss1=0
+numero_gauss2=0
+rrrr=1
+rrrrr=1
+
+do s=1,218
+if (vvecinos(s)/=0) rrrr=s 
+end do 
+
+do s=1,218
+if ((vvecinos(s)/=0) .and. (vvecinos(s)/=vvecinos(rrrr))) rrrrr=s 
+end do
+
+do s=1,218
+if (vvecinos(s)==vvecinos(rrrr)) numero_gauss1=numero_gauss1+1 
+end do 
+
+do s=1,218 
+if (vvecinos(s)==vvecinos(rrrrr)) numero_gauss2=numero_gauss2+1 
+end do 
+
+
+!esto quiere decir que la particula esta centrada en el borde de grano GB
+if (abs(numero_gauss2-numero_gauss1)<=10) vect2_val=1
+
+!esto quiere decir que la particula esta tocando el borde de grano GB y se movera al volumen chico
+!if ((gauss>=numero_gauss2)) vect1=1
+
+
+end function
+
+
+
+! *********************************************************************
+!                Function veci (FORTRAN)   ACTUALIZADO GPU
+!
+!  This subroutine calculates the neighbour of a particle 
+!
+!								Version 1.0
+!								7/06/16
+!
+! *********************************************************************
+
+
+
+attributes(device) Integer function Ve2(c_device, ii, jj, kk, filas, columnas, ancho) result(ve2_val)
+ 
+    IMPLICIT NONE
+integer, device :: c_device(:,:,:)
+    integer, value :: ii, jj, kk, filas, columnas, ancho
+    integer :: jfl, jfr, jcl, jcr, jkl, jkr
+    integer :: mfl, mfr, mcl, mcr, mkl, mkr
+    integer :: sfl, sfr, scl, scr, skl, skr
+    integer :: s
+    integer, dimension(218) :: vvecinos
+
+ve2_val=0
+
+ jfl = ii-1 ;  if (jfl < 1)        jfl = filas
+ jcl = jj-1 ;  if (jcl < 1)        jcl = columnas
+ jkl = kk-1 ;  if (jkl < 1)        jkl = ancho
+ 
+ jfr = ii+1 ;  if (jfr > filas)    jfr = 1
+ jcr = jj+1 ;  if (jcr > columnas) jcr = 1
+ jkr = kk+1 ;  if (jkr > ancho)    jkr = 1
+
+ mfl=ii-2
+ if (mfl==-1) then 
+ mfl = filas-1
+ else
+ if (mfl==0) then
+ mfl = filas
+ end if
+ end if
+
+ 
+mcl=jj-2
+ if (mcl==-1) then 
+ mcl = columnas-1
+ else
+ if (mcl==0) then
+ mcl = columnas
+ end if
+ end if
+
+ mkl=kk-2
+ if (mkl==-1) then 
+ mkl = ancho-1
+ else
+ if (mkl==0) then
+ mkl = ancho
+ end if
+ end if
+ 
+ mfr=ii+2
+ if (mfr==filas+2) then 
+ mfr = 2
+ else
+ if (mfr==filas+1) then
+ mfr = 1
+ end if
+ end if
+ 
+ mcr=jj+2
+ if (mcr==columnas+2) then 
+ mcr = 2
+ else
+ if (mcr==columnas+1) then
+ mcr = 1
+ end if
+ end if
+
+ 
+ mkr=kk+2
+ if (mkr==ancho+2) then 
+ mkr = 2
+ else
+ if (mkr==ancho+1) then
+ mkr = 1
+ end if
+ end if
+
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+sfl=ii-3
+ if (sfl==-2) then 
+ sfl = filas-2
+ else
+ if (sfl==0) then
+ sfl = filas
+ end if
+ end if
+
+ 
+scl=jj-3
+ if (scl==-2) then 
+ scl = columnas-2
+ else
+ if (scl==0) then
+ scl = columnas
+ end if
+ end if
+
+ skl=kk-3
+ if (skl==-2) then 
+ skl = ancho-2
+ else
+ if (skl==0) then
+ skl = ancho
+ end if
+ end if
+ 
+ sfr=ii+3
+ if (sfr==filas+3) then 
+ sfr = 3
+ else
+ if (sfr==filas+2) then
+ sfr = 2
+ end if
+ end if
+ 
+ scr=jj+3
+ if (scr==columnas+3) then 
+ scr = 3
+ else
+ if (scr==columnas+2) then
+ scr = 2
+ end if
+ end if
+
+ 
+ skr=kk+3
+ if (skr==ancho+3) then 
+ skr = 3
+ else
+ if (skr==ancho+2) then
+ skr = 2
+ end if
+ end if
+
+
+!********anillo 1**********************
+ vvecinos(1) = c_device(sfl, scr,mkr)
+ vvecinos(2) = c_device(sfl, mcr,mkr)
+ vvecinos(3) = c_device(sfl, jcr,mkr)
+ vvecinos(4) = c_device(sfl, jj,mkr)
+ vvecinos(5) = c_device(sfl, jcl,mkr)
+ vvecinos(6) = c_device(sfl, mcl,mkr)
+ vvecinos(7) = c_device(sfl, scl,mkr)
+ 
+ vvecinos(8) = c_device(sfr, scr,mkr)
+ vvecinos(9) = c_device(sfr, mcr,mkr)
+ vvecinos(10) = c_device(sfr, jcr,mkr)
+ vvecinos(11) = c_device(sfr, jj,mkr)
+ vvecinos(12) = c_device(sfr, jcl,mkr)
+ vvecinos(13) = c_device(sfr, mcl,mkr)
+ vvecinos(14) = c_device(sfr, scl,mkr)
+ 
+ vvecinos(15) = c_device(mfl,scr,mkr)
+ vvecinos(16) = c_device(jfl,scr,mkr)
+ vvecinos(17) = c_device(ii,scr,mkr)
+ vvecinos(18) = c_device(jfr,scr,mkr)
+ vvecinos(19) = c_device(mfl,scr,mkr)
+ 
+ vvecinos(20) = c_device(mfl,scl,mkr)
+ vvecinos(21) = c_device(jfl,scl,mkr)
+ vvecinos(22) = c_device(ii,scl,mkr)
+ vvecinos(23) = c_device(jfr,scl,mkr)
+ vvecinos(24) = c_device(mfl,scl,mkr)
+
+ !********anillo 2**********************
+ 
+ vvecinos(25) = c_device(sfl, scr,jkr)
+ vvecinos(26) = c_device(sfl, mcr,jkr)
+ vvecinos(27) = c_device(sfl, jcr,jkr)
+ vvecinos(28) = c_device(sfl, jj,jkr)
+ vvecinos(29) = c_device(sfl, jcl,jkr)
+ vvecinos(30) = c_device(sfl, mcl,jkr)
+ vvecinos(31) = c_device(sfl, scl,jkr)
+ 
+ vvecinos(32) = c_device(sfr, scr,jkr)
+ vvecinos(33) = c_device(sfr, mcr,jkr)
+ vvecinos(34) = c_device(sfr, jcr,jkr)
+ vvecinos(35) = c_device(sfr, jj,jkr)
+ vvecinos(36) = c_device(sfr, jcl,jkr)
+ vvecinos(37) = c_device(sfr, mcl,jkr)
+ vvecinos(38) = c_device(sfr, scl,jkr)
+ 
+ vvecinos(39) = c_device(mfl,scr,jkr)
+ vvecinos(40) = c_device(jfl,scr,jkr)
+ vvecinos(41) = c_device(ii,scr,jkr)
+ vvecinos(42) = c_device(jfr,scr,jkr)
+ vvecinos(43) = c_device(mfl,scr,jkr)
+ 
+ vvecinos(44) = c_device(mfl,scl,jkr)
+ vvecinos(45) = c_device(jfl,scl,jkr)
+ vvecinos(46) = c_device(ii,scl,jkr)
+ vvecinos(47) = c_device(jfr,scl,jkr)
+ vvecinos(48) = c_device(mfl,scl,jkr)
+ 
+!********anillo 3**********************
+
+ vvecinos(49) = c_device(sfl, scr,kk)
+ vvecinos(50) = c_device(sfl, mcr,kk)
+ vvecinos(51) = c_device(sfl, jcr,kk)
+ vvecinos(52) = c_device(sfl, jj,kk)
+ vvecinos(53) = c_device(sfl, jcl,kk)
+ vvecinos(54) = c_device(sfl, mcl,kk)
+ vvecinos(55) = c_device(sfl, scl,kk)
+ 
+ vvecinos(56) = c_device(sfr, scr,kk)
+ vvecinos(57) = c_device(sfr, mcr,kk)
+ vvecinos(58) = c_device(sfr, jcr,kk)
+ vvecinos(59) = c_device(sfr, jj,kk)
+ vvecinos(60) = c_device(sfr, jcl,kk)
+ vvecinos(61) = c_device(sfr, mcl,kk)
+ vvecinos(62) = c_device(sfr, scl,kk)
+ 
+ vvecinos(63) = c_device(mfl,scr,kk)
+ vvecinos(64) = c_device(jfl,scr,kk)
+ vvecinos(65) = c_device(ii,scr,kk)
+ vvecinos(66) = c_device(jfr,scr,kk)
+ vvecinos(67) = c_device(mfl,scr,kk)
+ 
+ vvecinos(68) = c_device(mfl,scl,kk)
+ vvecinos(69) = c_device(jfl,scl,kk)
+ vvecinos(70) = c_device(ii,scl,kk)
+ vvecinos(71) = c_device(jfr,scl,kk)
+ vvecinos(72) = c_device(mfl,scl,kk)
+ 	 
+!********anillo 4**********************
+ vvecinos(73) = c_device(sfl, scr,jkl)
+ vvecinos(74) = c_device(sfl, mcr,jkl)
+ vvecinos(75) = c_device(sfl, jcr,jkl)
+ vvecinos(76) = c_device(sfl, jj,jkl)
+ vvecinos(77) = c_device(sfl, jcl,jkl)
+ vvecinos(78) = c_device(sfl, mcl,jkl)
+ vvecinos(79) = c_device(sfl, scl,jkl)
+ 
+ vvecinos(80) = c_device(sfr, scr,jkl)
+ vvecinos(81) = c_device(sfr, mcr,jkl)
+ vvecinos(82) = c_device(sfr, jcr,jkl)
+ vvecinos(83) = c_device(sfr, jj,jkl)
+ vvecinos(84) = c_device(sfr, jcl,jkl)
+ vvecinos(85) = c_device(sfr, mcl,jkl)
+ vvecinos(86) = c_device(sfr, scl,jkl)
+ 
+ vvecinos(87) = c_device(mfl,scr,jkl)
+ vvecinos(88) = c_device(jfl,scr,jkl)
+ vvecinos(89) = c_device(ii,scr,jkl)
+ vvecinos(90) = c_device(jfr,scr,jkl)
+ vvecinos(91) = c_device(mfl,scr,jkl)
+ 
+ vvecinos(92) = c_device(mfl,scl,jkl)
+ vvecinos(93) = c_device(jfl,scl,jkl)
+ vvecinos(94) = c_device(ii,scl,jkl)
+ vvecinos(95) = c_device(jfr,scl,jkl)
+ vvecinos(96) = c_device(mfl,scl,jkl)
+ 
+ !********anillo 5**********************
+ vvecinos(97) = c_device(sfl, scr,mkl)
+ vvecinos(98) = c_device(sfl, mcr,mkl)
+ vvecinos(99) = c_device(sfl, jcr,mkl)
+ vvecinos(100) = c_device(sfl, jj,mkl)
+ vvecinos(101) = c_device(sfl, jcl,mkl)
+ vvecinos(102) = c_device(sfl, mcl,mkl)
+ vvecinos(103) = c_device(sfl, scl,mkl)
+ 
+ vvecinos(104) = c_device(sfr, scr,mkl)
+ vvecinos(105) = c_device(sfr, mcr,mkl)
+ vvecinos(106) = c_device(sfr, jcr,mkl)
+ vvecinos(107) = c_device(sfr, jj,mkl)
+ vvecinos(108) = c_device(sfr, jcl,mkl)
+ vvecinos(109) = c_device(sfr, mcl,mkl)
+ vvecinos(110) = c_device(sfr, scl,mkl)
+ 
+ vvecinos(111) = c_device(mfl,scr,mkl)
+ vvecinos(112) = c_device(jfl,scr,mkl)
+ vvecinos(113) = c_device(ii,scr,mkl)
+ vvecinos(114) = c_device(jfr,scr,mkl)
+ vvecinos(115) = c_device(mfl,scr,mkl)
+ 
+ vvecinos(116) = c_device(mfl,scl,mkl)
+ vvecinos(117) = c_device(jfl,scl,mkl)
+ vvecinos(118) = c_device(ii,scl,mkl)
+ vvecinos(119) = c_device(jfr,scl,mkl)
+ vvecinos(120) = c_device(mfl,scl,mkl)
+ 
+!************tapa1*******************
+
+ vvecinos(121) = c_device(sfl, scr,skl)
+ vvecinos(122) = c_device(sfl, mcr,skl)
+ vvecinos(123) = c_device(sfl, jcr,skl)
+ vvecinos(124) = c_device(sfl, jj,skl)
+ vvecinos(125) = c_device(sfl, jcl,skl)
+ vvecinos(126) = c_device(sfl, mcl,skl)
+ vvecinos(127) = c_device(sfl, scl,skl)
+ 
+ vvecinos(128) = c_device(mfl, scr,skl)
+ vvecinos(129) = c_device(mfl, mcr,skl)
+ vvecinos(130) = c_device(mfl, jcr,skl)
+ vvecinos(131) = c_device(mfl, jj,skl)
+ vvecinos(132) = c_device(mfl, jcl,skl)
+ vvecinos(133) = c_device(mfl, mcl,skl)
+ vvecinos(134) = c_device(mfl, scl,skl)
+ 
+ vvecinos(135) = c_device(jfl, scr,skl)
+ vvecinos(136) = c_device(jfl, mcr,skl)
+ vvecinos(137) = c_device(jfl, jcr,skl)
+ vvecinos(138) = c_device(jfl, jj,skl)
+ vvecinos(139) = c_device(jfl, jcl,skl)
+ vvecinos(140) = c_device(jfl, mcl,skl)
+ vvecinos(141) = c_device(jfl, scl,skl)
+ 
+ vvecinos(142) = c_device(ii, scr,skl)
+ vvecinos(143) = c_device(ii, mcr,skl)
+ vvecinos(144) = c_device(ii, jcr,skl)
+ vvecinos(145) = c_device(ii, jj,skl)
+ vvecinos(146) = c_device(ii, jcl,skl)
+ vvecinos(147) = c_device(ii, mcl,skl)
+ vvecinos(148) = c_device(ii, scl,skl)
+ 
+ vvecinos(149) = c_device(jfr, scr,skl)
+ vvecinos(150) = c_device(jfr, mcr,skl)
+ vvecinos(151) = c_device(jfr, jcr,skl)
+ vvecinos(152) = c_device(jfr, jj,skl)
+ vvecinos(153) = c_device(jfr, jcl,skl)
+ vvecinos(154) = c_device(jfr, mcl,skl)
+ vvecinos(155) = c_device(jfr, scl,skl)
+ 
+ vvecinos(156) = c_device(mfr, scr,skl)
+ vvecinos(157) = c_device(mfr, mcr,skl)
+ vvecinos(158) = c_device(mfr, jcr,skl)
+ vvecinos(159) = c_device(mfr, jj,skl)
+ vvecinos(160) = c_device(mfr, jcl,skl)
+ vvecinos(161) = c_device(mfr, mcl,skl)
+ vvecinos(162) = c_device(mfr, scl,skl)
+ 
+ vvecinos(163) = c_device(sfr, scr,skl)
+ vvecinos(164) = c_device(sfr, mcr,skl)
+ vvecinos(165) = c_device(sfr, jcr,skl)
+ vvecinos(166) = c_device(sfr, jj,skl)
+ vvecinos(167) = c_device(sfr, jcl,skl)
+ vvecinos(168) = c_device(sfr, mcl,skl)
+ vvecinos(169) = c_device(sfr, scl,skl)
+ 
+! ************tapa2*******************
+
+ vvecinos(170) = c_device(sfl, scr,skr)
+ vvecinos(171) = c_device(sfl, mcr,skr)
+ vvecinos(172) = c_device(sfl, jcr,skr)
+ vvecinos(173) = c_device(sfl, jj,skr)
+ vvecinos(174) = c_device(sfl, jcl,skr)
+ vvecinos(175) = c_device(sfl, mcl,skr)
+ vvecinos(176) = c_device(sfl, scl,skr)
+ 
+ vvecinos(177) = c_device(mfl, scr,skr)
+ vvecinos(178) = c_device(mfl, mcr,skr)
+ vvecinos(179) = c_device(mfl, jcr,skr)
+ vvecinos(180) = c_device(mfl, jj,skr)
+ vvecinos(181) = c_device(mfl, jcl,skr)
+ vvecinos(182) = c_device(mfl, mcl,skr)
+ vvecinos(183) = c_device(mfl, scl,skr)
+ 
+ vvecinos(184) = c_device(jfl, scr,skr)
+ vvecinos(185) = c_device(jfl, mcr,skr)
+ vvecinos(186) = c_device(jfl, jcr,skr)
+ vvecinos(187) = c_device(jfl, jj,skr)
+ vvecinos(188) = c_device(jfl, jcl,skr)
+ vvecinos(189) = c_device(jfl, mcl,skr)
+ vvecinos(190) = c_device(jfl, scl,skr)
+ 
+ vvecinos(191) = c_device(ii, scr,skr)
+ vvecinos(192) = c_device(ii, mcr,skr)
+ vvecinos(193) = c_device(ii, jcr,skr)
+ vvecinos(194) = c_device(ii, jj,skr)
+ vvecinos(195) = c_device(ii, jcl,skr)
+ vvecinos(196) = c_device(ii, mcl,skr)
+ vvecinos(197) = c_device(ii, scl,skr)
+ 
+ vvecinos(198) = c_device(jfr, scr,skr)
+ vvecinos(199) = c_device(jfr, mcr,skr)
+ vvecinos(200) = c_device(jfr, jcr,skr)
+ vvecinos(201) = c_device(jfr, jj,skr)
+ vvecinos(202) = c_device(jfr, jcl,skr)
+ vvecinos(203) = c_device(jfr, mcl,skr)
+ vvecinos(204) = c_device(jfr, scl,skr)
+ 
+ vvecinos(205) = c_device(mfr, scr,skr)
+ vvecinos(206) = c_device(mfr, mcr,skr)
+ vvecinos(207) = c_device(mfr, jcr,skr)
+ vvecinos(208) = c_device(mfr, jj,skr)
+ vvecinos(209) = c_device(mfr, jcl,skr)
+ vvecinos(210) = c_device(mfr, mcl,skr)
+ vvecinos(211) = c_device(mfr, scl,skr)
+ 
+ vvecinos(212) = c_device(sfr, scr,skr)
+ vvecinos(213) = c_device(sfr, mcr,skr)
+ vvecinos(214) = c_device(sfr, jcr,skr)
+ vvecinos(215) = c_device(sfr, jj,skr)
+ vvecinos(216) = c_device(sfr, jcl,skr)
+ vvecinos(217) = c_device(sfr, mcl,skr)
+ vvecinos(218) = c_device(sfr, scl,skr)
+
+    do s = 1, 218
+        if (vvecinos(s) == 0) then
+            ve2_val = 1
+            exit ! Salimos del bucle tan pronto como encontramos una partícula
+        end if
+    end do
+
+
+end function
+
+
+! *********************************************************************
+!                Function borde (FORTRAN)   ACTUALIZADO GPU
+!
+!  This subroutine calculates the neighbour of a particle 
+!
+!								Version 1.0
+!								7/06/16
+!
+! *********************************************************************
+
+attributes(device) Integer function Vec2(c_device, ii, jj, kk, filas, columnas, ancho) result(vec2_val)
+    IMPLICIT NONE
+integer, device :: c_device(:,:,:)
+    integer, value :: ii, jj, kk, filas, columnas, ancho
+    integer :: rrrr, s
+    integer :: jfl, jfr, jcl, jcr, jkl, jkr
+    integer :: mfl, mfr, mcl, mcr, mkl, mkr
+    integer :: sfl, sfr, scl, scr, skl, skr
+    integer, dimension(218) :: vvecinos
+
+rrrr=1
+
+
+jfl = ii-1 ;  if (jfl < 1)        jfl = filas
+ jcl = jj-1 ;  if (jcl < 1)        jcl = columnas
+ jkl = kk-1 ;  if (jkl < 1)        jkl = ancho
+ 
+ jfr = ii+1 ;  if (jfr > filas)    jfr = 1
+ jcr = jj+1 ;  if (jcr > columnas) jcr = 1
+ jkr = kk+1 ;  if (jkr > ancho)    jkr = 1
+
+vec2_val=0
+
+ mfl=ii-2
+ if (mfl==-1) then 
+ mfl = filas-1
+ else
+ if (mfl==0) then
+ mfl = filas
+ end if
+ end if
+
+ 
+mcl=jj-2
+ if (mcl==-1) then 
+ mcl = columnas-1
+ else
+ if (mcl==0) then
+ mcl = columnas
+ end if
+ end if
+
+ mkl=kk-2
+ if (mkl==-1) then 
+ mkl = ancho-1
+ else
+ if (mkl==0) then
+ mkl = ancho
+ end if
+ end if
+ 
+ mfr=ii+2
+ if (mfr==filas+2) then 
+ mfr = 2
+ else
+ if (mfr==filas+1) then
+ mfr = 1
+ end if
+ end if
+ 
+ mcr=jj+2
+ if (mcr==columnas+2) then 
+ mcr = 2
+ else
+ if (mcr==columnas+1) then
+ mcr = 1
+ end if
+ end if
+
+ 
+ mkr=kk+2
+ if (mkr==ancho+2) then 
+ mkr = 2
+ else
+ if (mkr==ancho+1) then
+ mkr = 1
+ end if
+ end if
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+sfl=ii-3
+ if (sfl==-2) then 
+ sfl = filas-2
+ else
+ if (sfl==0) then
+ sfl = filas
+ end if
+ end if
+
+ 
+scl=jj-3
+ if (scl==-2) then 
+ scl = columnas-2
+ else
+ if (scl==0) then
+ scl = columnas
+ end if
+ end if
+
+ skl=kk-3
+ if (skl==-2) then 
+ skl = ancho-2
+ else
+ if (skl==0) then
+ skl = ancho
+ end if
+ end if
+ 
+ sfr=ii+3
+ if (sfr==filas+3) then 
+ sfr = 3
+ else
+ if (sfr==filas+2) then
+ sfr = 2
+ end if
+ end if
+ 
+ scr=jj+3
+ if (scr==columnas+3) then 
+ scr = 3
+ else
+ if (scr==columnas+2) then
+ scr = 2
+ end if
+ end if
+
+ 
+ skr=kk+3
+ if (skr==ancho+3) then 
+ skr = 3
+ else
+ if (skr==ancho+2) then
+ skr = 2
+ end if
+ end if
+
+
+!********anillo 1**********************
+ vvecinos(1) = c_device(sfl, scr,mkr)
+ vvecinos(2) = c_device(sfl, mcr,mkr)
+ vvecinos(3) = c_device(sfl, jcr,mkr)
+ vvecinos(4) = c_device(sfl, jj,mkr)
+ vvecinos(5) = c_device(sfl, jcl,mkr)
+ vvecinos(6) = c_device(sfl, mcl,mkr)
+ vvecinos(7) = c_device(sfl, scl,mkr)
+ 
+ vvecinos(8) = c_device(sfr, scr,mkr)
+ vvecinos(9) = c_device(sfr, mcr,mkr)
+ vvecinos(10) = c_device(sfr, jcr,mkr)
+ vvecinos(11) = c_device(sfr, jj,mkr)
+ vvecinos(12) = c_device(sfr, jcl,mkr)
+ vvecinos(13) = c_device(sfr, mcl,mkr)
+ vvecinos(14) = c_device(sfr, scl,mkr)
+ 
+ vvecinos(15) = c_device(mfl,scr,mkr)
+ vvecinos(16) = c_device(jfl,scr,mkr)
+ vvecinos(17) = c_device(ii,scr,mkr)
+ vvecinos(18) = c_device(jfr,scr,mkr)
+ vvecinos(19) = c_device(mfl,scr,mkr)
+ 
+ vvecinos(20) = c_device(mfl,scl,mkr)
+ vvecinos(21) = c_device(jfl,scl,mkr)
+ vvecinos(22) = c_device(ii,scl,mkr)
+ vvecinos(23) = c_device(jfr,scl,mkr)
+ vvecinos(24) = c_device(mfl,scl,mkr)
+
+ !********anillo 2**********************
+ 
+ vvecinos(25) = c_device(sfl, scr,jkr)
+ vvecinos(26) = c_device(sfl, mcr,jkr)
+ vvecinos(27) = c_device(sfl, jcr,jkr)
+ vvecinos(28) = c_device(sfl, jj,jkr)
+ vvecinos(29) = c_device(sfl, jcl,jkr)
+ vvecinos(30) = c_device(sfl, mcl,jkr)
+ vvecinos(31) = c_device(sfl, scl,jkr)
+ 
+ vvecinos(32) = c_device(sfr, scr,jkr)
+ vvecinos(33) = c_device(sfr, mcr,jkr)
+ vvecinos(34) = c_device(sfr, jcr,jkr)
+ vvecinos(35) = c_device(sfr, jj,jkr)
+ vvecinos(36) = c_device(sfr, jcl,jkr)
+ vvecinos(37) = c_device(sfr, mcl,jkr)
+ vvecinos(38) = c_device(sfr, scl,jkr)
+ 
+ vvecinos(39) = c_device(mfl,scr,jkr)
+ vvecinos(40) = c_device(jfl,scr,jkr)
+ vvecinos(41) = c_device(ii,scr,jkr)
+ vvecinos(42) = c_device(jfr,scr,jkr)
+ vvecinos(43) = c_device(mfl,scr,jkr)
+ 
+ vvecinos(44) = c_device(mfl,scl,jkr)
+ vvecinos(45) = c_device(jfl,scl,jkr)
+ vvecinos(46) = c_device(ii,scl,jkr)
+ vvecinos(47) = c_device(jfr,scl,jkr)
+ vvecinos(48) = c_device(mfl,scl,jkr)
+ 
+!********anillo 3**********************
+
+ vvecinos(49) = c_device(sfl, scr,kk)
+ vvecinos(50) = c_device(sfl, mcr,kk)
+ vvecinos(51) = c_device(sfl, jcr,kk)
+ vvecinos(52) = c_device(sfl, jj,kk)
+ vvecinos(53) = c_device(sfl, jcl,kk)
+ vvecinos(54) = c_device(sfl, mcl,kk)
+ vvecinos(55) = c_device(sfl, scl,kk)
+ 
+ vvecinos(56) = c_device(sfr, scr,kk)
+ vvecinos(57) = c_device(sfr, mcr,kk)
+ vvecinos(58) = c_device(sfr, jcr,kk)
+ vvecinos(59) = c_device(sfr, jj,kk)
+ vvecinos(60) = c_device(sfr, jcl,kk)
+ vvecinos(61) = c_device(sfr, mcl,kk)
+ vvecinos(62) = c_device(sfr, scl,kk)
+ 
+ vvecinos(63) = c_device(mfl,scr,kk)
+ vvecinos(64) = c_device(jfl,scr,kk)
+ vvecinos(65) = c_device(ii,scr,kk)
+ vvecinos(66) = c_device(jfr,scr,kk)
+ vvecinos(67) = c_device(mfl,scr,kk)
+ 
+ vvecinos(68) = c_device(mfl,scl,kk)
+ vvecinos(69) = c_device(jfl,scl,kk)
+ vvecinos(70) = c_device(ii,scl,kk)
+ vvecinos(71) = c_device(jfr,scl,kk)
+ vvecinos(72) = c_device(mfl,scl,kk)
+ 	 
+!********anillo 4**********************
+ vvecinos(73) = c_device(sfl, scr,jkl)
+ vvecinos(74) = c_device(sfl, mcr,jkl)
+ vvecinos(75) = c_device(sfl, jcr,jkl)
+ vvecinos(76) = c_device(sfl, jj,jkl)
+ vvecinos(77) = c_device(sfl, jcl,jkl)
+ vvecinos(78) = c_device(sfl, mcl,jkl)
+ vvecinos(79) = c_device(sfl, scl,jkl)
+ 
+ vvecinos(80) = c_device(sfr, scr,jkl)
+ vvecinos(81) = c_device(sfr, mcr,jkl)
+ vvecinos(82) = c_device(sfr, jcr,jkl)
+ vvecinos(83) = c_device(sfr, jj,jkl)
+ vvecinos(84) = c_device(sfr, jcl,jkl)
+ vvecinos(85) = c_device(sfr, mcl,jkl)
+ vvecinos(86) = c_device(sfr, scl,jkl)
+ 
+ vvecinos(87) = c_device(mfl,scr,jkl)
+ vvecinos(88) = c_device(jfl,scr,jkl)
+ vvecinos(89) = c_device(ii,scr,jkl)
+ vvecinos(90) = c_device(jfr,scr,jkl)
+ vvecinos(91) = c_device(mfl,scr,jkl)
+ 
+ vvecinos(92) = c_device(mfl,scl,jkl)
+ vvecinos(93) = c_device(jfl,scl,jkl)
+ vvecinos(94) = c_device(ii,scl,jkl)
+ vvecinos(95) = c_device(jfr,scl,jkl)
+ vvecinos(96) = c_device(mfl,scl,jkl)
+ 
+ !********anillo 5**********************
+ vvecinos(97) = c_device(sfl, scr,mkl)
+ vvecinos(98) = c_device(sfl, mcr,mkl)
+ vvecinos(99) = c_device(sfl, jcr,mkl)
+ vvecinos(100) = c_device(sfl, jj,mkl)
+ vvecinos(101) = c_device(sfl, jcl,mkl)
+ vvecinos(102) = c_device(sfl, mcl,mkl)
+ vvecinos(103) = c_device(sfl, scl,mkl)
+ 
+ vvecinos(104) = c_device(sfr, scr,mkl)
+ vvecinos(105) = c_device(sfr, mcr,mkl)
+ vvecinos(106) = c_device(sfr, jcr,mkl)
+ vvecinos(107) = c_device(sfr, jj,mkl)
+ vvecinos(108) = c_device(sfr, jcl,mkl)
+ vvecinos(109) = c_device(sfr, mcl,mkl)
+ vvecinos(110) = c_device(sfr, scl,mkl)
+ 
+ vvecinos(111) = c_device(mfl,scr,mkl)
+ vvecinos(112) = c_device(jfl,scr,mkl)
+ vvecinos(113) = c_device(ii,scr,mkl)
+ vvecinos(114) = c_device(jfr,scr,mkl)
+ vvecinos(115) = c_device(mfl,scr,mkl)
+ 
+ vvecinos(116) = c_device(mfl,scl,mkl)
+ vvecinos(117) = c_device(jfl,scl,mkl)
+ vvecinos(118) = c_device(ii,scl,mkl)
+ vvecinos(119) = c_device(jfr,scl,mkl)
+ vvecinos(120) = c_device(mfl,scl,mkl)
+ 
+!************tapa1*******************
+
+ vvecinos(121) = c_device(sfl, scr,skl)
+ vvecinos(122) = c_device(sfl, mcr,skl)
+ vvecinos(123) = c_device(sfl, jcr,skl)
+ vvecinos(124) = c_device(sfl, jj,skl)
+ vvecinos(125) = c_device(sfl, jcl,skl)
+ vvecinos(126) = c_device(sfl, mcl,skl)
+ vvecinos(127) = c_device(sfl, scl,skl)
+ 
+ vvecinos(128) = c_device(mfl, scr,skl)
+ vvecinos(129) = c_device(mfl, mcr,skl)
+ vvecinos(130) = c_device(mfl, jcr,skl)
+ vvecinos(131) = c_device(mfl, jj,skl)
+ vvecinos(132) = c_device(mfl, jcl,skl)
+ vvecinos(133) = c_device(mfl, mcl,skl)
+ vvecinos(134) = c_device(mfl, scl,skl)
+ 
+ vvecinos(135) = c_device(jfl, scr,skl)
+ vvecinos(136) = c_device(jfl, mcr,skl)
+ vvecinos(137) = c_device(jfl, jcr,skl)
+ vvecinos(138) = c_device(jfl, jj,skl)
+ vvecinos(139) = c_device(jfl, jcl,skl)
+ vvecinos(140) = c_device(jfl, mcl,skl)
+ vvecinos(141) = c_device(jfl, scl,skl)
+ 
+ vvecinos(142) = c_device(ii, scr,skl)
+ vvecinos(143) = c_device(ii, mcr,skl)
+ vvecinos(144) = c_device(ii, jcr,skl)
+ vvecinos(145) = c_device(ii, jj,skl)
+ vvecinos(146) = c_device(ii, jcl,skl)
+ vvecinos(147) = c_device(ii, mcl,skl)
+ vvecinos(148) = c_device(ii, scl,skl)
+ 
+ vvecinos(149) = c_device(jfr, scr,skl)
+ vvecinos(150) = c_device(jfr, mcr,skl)
+ vvecinos(151) = c_device(jfr, jcr,skl)
+ vvecinos(152) = c_device(jfr, jj,skl)
+ vvecinos(153) = c_device(jfr, jcl,skl)
+ vvecinos(154) = c_device(jfr, mcl,skl)
+ vvecinos(155) = c_device(jfr, scl,skl)
+ 
+ vvecinos(156) = c_device(mfr, scr,skl)
+ vvecinos(157) = c_device(mfr, mcr,skl)
+ vvecinos(158) = c_device(mfr, jcr,skl)
+ vvecinos(159) = c_device(mfr, jj,skl)
+ vvecinos(160) = c_device(mfr, jcl,skl)
+ vvecinos(161) = c_device(mfr, mcl,skl)
+ vvecinos(162) = c_device(mfr, scl,skl)
+ 
+ vvecinos(163) = c_device(sfr, scr,skl)
+ vvecinos(164) = c_device(sfr, mcr,skl)
+ vvecinos(165) = c_device(sfr, jcr,skl)
+ vvecinos(166) = c_device(sfr, jj,skl)
+ vvecinos(167) = c_device(sfr, jcl,skl)
+ vvecinos(168) = c_device(sfr, mcl,skl)
+ vvecinos(169) = c_device(sfr, scl,skl)
+ 
+! ************tapa2*******************
+
+ vvecinos(170) = c_device(sfl, scr,skr)
+ vvecinos(171) = c_device(sfl, mcr,skr)
+ vvecinos(172) = c_device(sfl, jcr,skr)
+ vvecinos(173) = c_device(sfl, jj,skr)
+ vvecinos(174) = c_device(sfl, jcl,skr)
+ vvecinos(175) = c_device(sfl, mcl,skr)
+ vvecinos(176) = c_device(sfl, scl,skr)
+ 
+ vvecinos(177) = c_device(mfl, scr,skr)
+ vvecinos(178) = c_device(mfl, mcr,skr)
+ vvecinos(179) = c_device(mfl, jcr,skr)
+ vvecinos(180) = c_device(mfl, jj,skr)
+ vvecinos(181) = c_device(mfl, jcl,skr)
+ vvecinos(182) = c_device(mfl, mcl,skr)
+ vvecinos(183) = c_device(mfl, scl,skr)
+ 
+ vvecinos(184) = c_device(jfl, scr,skr)
+ vvecinos(185) = c_device(jfl, mcr,skr)
+ vvecinos(186) = c_device(jfl, jcr,skr)
+ vvecinos(187) = c_device(jfl, jj,skr)
+ vvecinos(188) = c_device(jfl, jcl,skr)
+ vvecinos(189) = c_device(jfl, mcl,skr)
+ vvecinos(190) = c_device(jfl, scl,skr)
+ 
+ vvecinos(191) = c_device(ii, scr,skr)
+ vvecinos(192) = c_device(ii, mcr,skr)
+ vvecinos(193) = c_device(ii, jcr,skr)
+ vvecinos(194) = c_device(ii, jj,skr)
+ vvecinos(195) = c_device(ii, jcl,skr)
+ vvecinos(196) = c_device(ii, mcl,skr)
+ vvecinos(197) = c_device(ii, scl,skr)
+ 
+ vvecinos(198) = c_device(jfr, scr,skr)
+ vvecinos(199) = c_device(jfr, mcr,skr)
+ vvecinos(200) = c_device(jfr, jcr,skr)
+ vvecinos(201) = c_device(jfr, jj,skr)
+ vvecinos(202) = c_device(jfr, jcl,skr)
+ vvecinos(203) = c_device(jfr, mcl,skr)
+ vvecinos(204) = c_device(jfr, scl,skr)
+ 
+ vvecinos(205) = c_device(mfr, scr,skr)
+ vvecinos(206) = c_device(mfr, mcr,skr)
+ vvecinos(207) = c_device(mfr, jcr,skr)
+ vvecinos(208) = c_device(mfr, jj,skr)
+ vvecinos(209) = c_device(mfr, jcl,skr)
+ vvecinos(210) = c_device(mfr, mcl,skr)
+ vvecinos(211) = c_device(mfr, scl,skr)
+ 
+ vvecinos(212) = c_device(sfr, scr,skr)
+ vvecinos(213) = c_device(sfr, mcr,skr)
+ vvecinos(214) = c_device(sfr, jcr,skr)
+ vvecinos(215) = c_device(sfr, jj,skr)
+ vvecinos(216) = c_device(sfr, jcl,skr)
+ vvecinos(217) = c_device(sfr, mcl,skr)
+ vvecinos(218) = c_device(sfr, scl,skr)
+ 
+ 
+ 
+do s=1,218 
+if (vvecinos(s)/=0) rrrr=s 
+end do 
+
+do s=1,218
+if ((vvecinos(s)/=vvecinos(rrrr)) .and. (vvecinos(s)/=0)) vec2_val=1 
+end do 
+
+end function
+
+
+! *********************************************************************
+!                Function centro (FORTRAN)  ACTUALIZADO GPU
+!
+!  This subroutine calculates the neighbour of a particle 
+!
+!								Version 1.0
+!								7/06/16
+!
+! *********************************************************************
+
+attributes(device) Integer function Vet2(c_device, ii, jj, kk, filas, columnas, ancho) result(vet2_val)
+    IMPLICIT NONE
+integer, device :: c_device(:,:,:)
+    integer, value :: ii, jj, kk, filas, columnas, ancho
+    integer :: jfl, jfr, jcl, jcr, jkl, jkr
+    integer :: mfl, mfr, mcl, mcr, mkl, mkr
+    integer :: s
+    integer, dimension(98) :: vvecinos
+
+
+vet2_val=1
+
+ jfl = ii-1 ;  if (jfl < 1)        jfl = filas 
+jcl = jj-1 ;  if (jcl < 1)        jcl = columnas 
+jkl = kk-1 ;  if (jkl < 1)        jkl = ancho 
+jfr = ii+1 ;  if (jfr > filas)    jfr = 1 
+jcr = jj+1 ;  if (jcr > columnas) jcr = 1 
+jkr = kk+1 ;  if (jkr > ancho)    jkr = 1  
+
+ 
+mfl=ii-2 
+if (mfl==-1) then  
+ mfl = filas-1 
+else 
+ if (mfl==0) then 
+ mfl = filas 
+ end if 
+end if 
+mcl=jj-2 
+if (mcl==-1) then  
+ mcl = columnas-1 
+else 
+ if (mcl==0) then 
+ mcl = columnas 
+ end if 
+end if 
+
+mkl=kk-2 
+if (mkl==-1) then  
+ mkl = ancho-1 
+else 
+ if (mkl==0) then 
+ mkl = ancho 
+ end if 
+end if 
+  
+ mfr=ii+2 
+ if (mfr==filas+2) then  
+ mfr = 2 
+ else 
+ if (mfr==filas+1) then 
+ mfr = 1 
+ end if 
+ end if 
+  
+ mcr=jj+2 
+ if (mcr==columnas+2) then  
+ mcr = 2 
+ else 
+ if (mcr==columnas+1) then 
+ mcr = 1 
+ end if 
+ end if 
+ 
+  
+ mkr=kk+2 
+ if (mkr==ancho+2) then  
+ mkr = 2 
+ else 
+ if (mkr==ancho+1) then 
+ mkr = 1 
+ end if 
+ end if 
+ 
+ 
+ 
+!********tapa1********************** 
+ Vvecinos(1) = c_device(jfl, jcl,mkr) 
+ Vvecinos(2) = c_device(jfl, jj,mkr) 
+ Vvecinos(3) = c_device(jfl, jcr,mkr) 
+ Vvecinos(4) = c_device(ii, jcl,mkr) 
+ Vvecinos(5) = c_device(ii, jcr,mkr) 
+ Vvecinos(6) = c_device(jfr, jcl,mkr) 
+ Vvecinos(7) = c_device(jfr, jj,mkr) 
+ Vvecinos(8) = c_device(jfr, jcr,mkr) 
+  
+!********tapa2********************** 
+ 
+ Vvecinos(9) = c_device(jfl, jcl,mkl) 
+ Vvecinos(10) = c_device(jfl, jj,mkl) 
+ Vvecinos(11) = c_device(jfl, jcr,mkl) 
+ Vvecinos(12) = c_device(ii, jcl,mkl) 
+ Vvecinos(13) = c_device(ii, jcr,mkl) 
+ Vvecinos(14) = c_device(jfr, jcl,mkl) 
+ Vvecinos(15) = c_device(jfr, jj,mkl) 
+ Vvecinos(16) = c_device(jfr, jcr,mkl) 
+ 
+!********tapa3********************** 
+Vvecinos(17) = c_device(mfl, jcl,jkr) 
+Vvecinos(18) = c_device(mfl, jcl,jkl)  
+Vvecinos(19) = c_device(mfl, jcl,kk) 
+Vvecinos(20) = c_device(mfl, jcr,jkr) 
+Vvecinos(21) = c_device(mfl, jcr,jkl) 
+Vvecinos(22) = c_device(mfl, jcr,kk) 
+Vvecinos(23) = c_device(mfl, jj,kk) 
+Vvecinos(24) = c_device(mfl, jj,jkr) 
+Vvecinos(25) = c_device(mfl, jj,jkl) 
+ 
+!********tapa4********************** 
+ 
+Vvecinos(26) = c_device(mfr, jcl,jkr) 
+Vvecinos(27) = c_device(mfr, jcl,jkl)  
+Vvecinos(28) = c_device(mfr, jcl,kk) 
+ Vvecinos(29) = c_device(mfr, jcr,jkr) 
+ Vvecinos(30) = c_device(mfr, jcr,jkl) 
+ Vvecinos(31) = c_device(mfr, jcr,kk) 
+ Vvecinos(32) = c_device(mfr, jj,kk) 
+Vvecinos(33) = c_device(mfr, jj,jkr) 
+Vvecinos(34) = c_device(mfr, jj,jkl) 
+ 
+!********tapa5********************** 
+ 
+Vvecinos(35) = c_device(jfl, mcl,jkr) 
+Vvecinos(36) = c_device(jfl, mcl,jkl) 
+Vvecinos(37) = c_device(jfl, mcl,kk) 
+Vvecinos(38) = c_device(ii, mcl,jkr) 
+Vvecinos(39) = c_device(ii, mcl,jkl)  
+Vvecinos(40) = c_device(ii, mcl,kk)  
+Vvecinos(41) = c_device(jfr, mcl,jkr) 
+Vvecinos(42) = c_device(jfr, mcl,jkl) 
+Vvecinos(43) = c_device(jfr, mcl,kk) 
+ 
+!********tapa6********************** 
+ 
+Vvecinos(44) = c_device(jfl, mcr,jkr) 
+Vvecinos(45) = c_device(jfl, mcr,jkl) 
+Vvecinos(46) = c_device(jfl, mcr,kk) 
+Vvecinos(47) = c_device(ii, mcr,jkr) 
+Vvecinos(48) = c_device(ii, mcr,jkl)  
+Vvecinos(49) = c_device(ii, mcr,kk)  
+Vvecinos(50) = c_device(jfr, mcr,jkr) 
+Vvecinos(51) = c_device(jfr, mcr,jkl) 
+Vvecinos(52) = c_device(jfr, mcr,kk) 
+ 
+!********arista1********************** 
+ 
+ Vvecinos(53) = c_device(mfl, jcl,mkr) 
+ Vvecinos(54) = c_device(mfl, jj,mkr) 
+ Vvecinos(55) = c_device(mfl, jcr,mkr) 
+ 
+Vvecinos(56) = c_device(jfl, mcl,mkr) 
+ Vvecinos(57) = c_device(jfr, mcl,mkr) 
+ Vvecinos(58) = c_device(ii, mcl,mkr) 
+ 
+ Vvecinos(59) = c_device(ii, mcr,mkr) 
+Vvecinos(60) = c_device(jfr, mcr,mkr) 
+Vvecinos(61) = c_device(jfl, mcr,mkr) 
+ 
+ Vvecinos(62) = c_device(mfr, jcl,mkr) 
+ Vvecinos(63) = c_device(mfr, jj,mkr) 
+ Vvecinos(64) = c_device(mfr, jcr,mkr) 
+ 
+  
+ Vvecinos(65) = c_device(mfl, mcr,mkr) 
+ Vvecinos(66) = c_device(mfl, mcl,mkr) 
+ 
+ Vvecinos(67) = c_device(mfr, mcl,mkr) 
+ Vvecinos(68) = c_device(mfr, mcr,mkr) 
+  
+  
+!********arista2********************** 
+ 
+ Vvecinos(69) = c_device(mfl, jcl,mkl) 
+ Vvecinos(70) = c_device(mfl, jj,mkl) 
+ Vvecinos(71) = c_device(mfl, jcr,mkl) 
+ 
+Vvecinos(72) = c_device(jfl, mcl,mkl) 
+ Vvecinos(73) = c_device(jfr, mcl,mkl) 
+ Vvecinos(74) = c_device(ii, mcl,mkl) 
+ 
+ Vvecinos(75) = c_device(ii, mcr,mkl) 
+Vvecinos(76) = c_device(jfr, mcr,mkl) 
+Vvecinos(77) = c_device(jfl, mcr,mkl) 
+ 
+ Vvecinos(78) = c_device(mfr, jcl,mkl) 
+ Vvecinos(79) = c_device(mfr, jj,mkl) 
+ Vvecinos(80) = c_device(mfr, jcr,mkl) 
+ 
+Vvecinos(81) = c_device(mfl, mcr,mkl) 
+ 
+ Vvecinos(82) = c_device(mfl, mcl,mkl) 
+ Vvecinos(83) = c_device(mfr, mcl,mkl) 
+ Vvecinos(84) = c_device(mfr, mcr,mkl) 
+  
+ 
+!********arista3********************** 
+ 
+Vvecinos(85) = c_device(mfl, mcl,jkr) 
+Vvecinos(86) = c_device(mfl, mcl,jkl)  
+Vvecinos(87) = c_device(mfl, mcl,kk) 
+Vvecinos(88) = c_device(mfl, mcr,jkr) 
+Vvecinos(89) = c_device(mfl, mcr,jkl) 
+Vvecinos(90) = c_device(mfl, mcr,kk) 
+ 
+ 
+!********arista4********************** 
+ 
+Vvecinos(91) = c_device(mfr, mcl,jkr) 
+Vvecinos(92) = c_device(mfr, mcl,jkl)  
+Vvecinos(93) = c_device(mfr, mcl,kk) 
+ Vvecinos(94) = c_device(mfr, mcr,jkr) 
+ Vvecinos(95) = c_device(mfr, mcr,jkl) 
+ Vvecinos(96) = c_device(mfr, mcr,kk) 
+ 
+ VVecinos(97)=c_device(ii,jj,mkr)
+ vvecinos(98)=c_device(ii,jj,mkl)
+ 
+do s=1,98
+if (vvecinos(s)==0) vet2_val=vet2_val+1
+end do 
+if (vet2_val==99) then
+vet2_val=1
+else 
+vet2_val=0
+end if
+ 	 
+end function
+
+
+!*********************************************************************
+!                Function matrix(FORTRAN)
+!
+!  esta rutina calcula si la particula esta  de la region de calculo) 
+!  arroja una variable vecm=0  esta y vecm=1 si no esta  
+!
+!*********************************************************************
+
+attributes(device) Integer function Vecm2(radius, ii, jj, kk, filas, columnas, ancho) result(vecm2_val)
+IMPLICIT NONE
+    integer, value :: radius, ii, jj, kk, filas, columnas, ancho
+    
+vecm2_val=0
+if ((ii-radius-1<=1) .or.(ii+radius+1>=filas))  vecm2_val=1
+if ((jj-radius-1<=1) .or.(jj+radius+1>=columnas))  vecm2_val=1
+if ((kk-radius-1<=1) .or.(kk+radius+1>=ancho))  vecm2_val=1
+end function
+
+end module radio2
